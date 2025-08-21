@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>DevSecOps on Milad's blog</title><link>https://fa.miladbr.uk/tags/devsecops/</link><description>Recent content in DevSecOps on Milad's blog</description><generator>Hugo -- gohugo.io</generator><language>fa</language><lastBuildDate>Mon, 20 Dec 2021 16:50:24 +0000</lastBuildDate><atom:link href="https://fa.miladbr.uk/tags/devsecops/index.xml" rel="self" type="application/rss+xml"/><item><title>پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD</title><link>https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/</link><pubDate>Mon, 20 Dec 2021 16:50:24 +0000</pubDate><guid>https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/</guid><description>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/cover.png" alt="Featured image of post پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD" />&lt;div dir="rtl">
+&lt;h2 id="مقدمه">مقدمه
+&lt;/h2>&lt;p>در روزهای گذشته آسیب‌پذیری‌ &lt;strong>Log4Shell&lt;/strong> (CVE-2021-44228, CVE-2021-45046) در صدر اخبار حوزه‌ی امنیت فناوری اطلاعات بوده است. بسیاری از شرکت‌ها برای شناسایی و رفع این آسیب‌پذیری دچار چالش شده بودند. برای شناسایی این آسیب‌پذیری ابزار‌ها و یک‌خطی‌های (&lt;em>one-liners&lt;/em>) مختلفی در دسترس بوده است. ما در هم‌روش برای شناسایی و کمک به مشتریانی که آسیب‌پذیر بوده‌اند از ابزار &lt;strong>Trivy&lt;/strong> استفاده کردیم. در کلاستر‌های هم‌روش به صورت مداوم در بازه‌های زمانی معین کانتینر‌های در حال اجرا توسط Trivy پویش می‌شوند. در این مورد خاص به علت اهمیت این موضوع نتایج آسیب‌پذیری در اختیار مشتریان قرار گرفت. مزایای استفاده از Trivy به جای راه‌کارهای سنتی در بستر &lt;strong>کوبرنتیز&lt;/strong> ما را ترغیب کرد که در یک نوشتار به معرفی Trivy و نحوه‌ی استفاده از آن در چرخه‌ی &lt;strong>CI/CD&lt;/strong> در گیت‌لب بپردازیم.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme.jpeg"
+width="725"
+height="500"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme_hu_2345e9c93a8123b.jpeg 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme_hu_9d9df906a1fb9313.jpeg 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="145"
+data-flex-basis="348px"
+>&lt;/p>
+&lt;h2 id="اهمیت-اسکن-کردن-ایمیجها-در-devsecops">اهمیت اسکن کردن ایمیج‌ها در DevSecOps
+&lt;/h2>&lt;p>یکی از گام‌های ساده در عین حال بسیار اثرگذار در بحث امن‌سازی سیستم‌ها، پویش (&lt;em>scan&lt;/em>) آسیب‌پذیری‌های شناخته‌شده (&lt;em>&lt;a class="link" href="https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/" target="_blank" rel="noopener"
+>known vulnerabilities&lt;/a>&lt;/em>) می‌باشد. بسیاری از اپ‌های کانتینری‌شده ممکن است بر پایه‌ی یک ایمیج قدیمی ایجاد شده باشند یا همچنین ممکن است در توسعه‌ی آنها از کتابخانه‌هایی استفاده شده باشد که دارای آسیب‌پذیری شناخته‌شده باشد.&lt;/p>
+&lt;p>در یک برنامه‌ی کانتینری شده یک آسیب‌پذیری در سطح سیستم‌عامل می‌تواند امنیت کل برنامه را زیر سؤال ببرد. همچنین یکی از مواردی که اغلب توسط برنامه‌نویس‌ها نادیده گرفته می‌شود پویش آسیب‌پذیری کتابخانه‌های ثالث است که در توسعه‌ی برنامه مورد استفاده قرار می‌گیرد. به همین دلیل لازم است قبل از برپاسازی یک برنامه در محیط عملیاتی از جنبه‌ی امنیت و همچنین انطباق با سیاست‌های خاص (مثلاً برنامه‌های حوزه‌ی پرداخت‌ یا پزشکی) مورد پویش قرار بگیرد.&lt;/p>
+&lt;p>در این شرایط با پویش پیوسته برنامه‌ها در زمان ساخت آن‌ها، در چرخه‌ی CI/CD، می‌توان در فاز ساخت ایمیج کانتینر بخشی از آسیب‌پذیری‌ها را شناسایی کرد و از انتشار نسخه‌ی ناامن و برپاسازی آن در محیط عملیاتی جلوگیری کرد. در این نوشتار برای پویش امنیتی ایمیج‌ها به معرفی ابزار Trivy و نحوه‌ی استفاده‌ی آن در چرخه‌ی CI/CD در GitLab می‌پردازیم.&lt;/p>
+&lt;h2 id="معرفی-trivy">معرفی Trivy
+&lt;/h2>&lt;p>&lt;strong>&lt;a class="link" href="https://github.com/aquasecurity/trivy" target="_blank" rel="noopener"
+>Trivy&lt;/a>&lt;/strong> یک ابزار متن‌باز است که در ابتدا به عنوان یک پروژه‌ی شخصی برای رفع نیازمندی پویش امنیتی ایمیج کانتینرها در بستر کوبرنتیز توسعه داده شد. پس از انتشار نسخه‌های اولیه در کامیونیتی‌های متن‌باز به صورت گسترده مورد استقبال قرار گرفت. انتشار Trivy به صورت یک فایل باینری مستقل که وابستگی به هیچ پایگاه داده، کتابخانه و یا سیستم‌عامل خاصی ندارد باعث شده که استقرار و به‌کارگیری آن بسیار ساده و مطلوب شود.&lt;/p>
+&lt;p>Trivy توانایی شناسایی آسیب‌پذیری در سطح &lt;strong>ایمیج برنامه‌های کانتینری‌شده&lt;/strong>، &lt;strong>فایل‌سیستم&lt;/strong>، &lt;strong>مخزن مبتنی بر Git&lt;/strong> و همچنین &lt;strong>فایل‌های تنظیمات (Configuration)&lt;/strong> را داراست. به طور دقیق‌تر با استفاده از Trivy می‌توان آسیب‌پذیری‌هایی را که در سطح بسته‌های (&lt;em>Package&lt;/em>) سیستم‌عامل یا کتابخانه‌های یک زبان برنامه‌نویسی وجود دارد شناسایی کرد.&lt;/p>
+&lt;p>&lt;img src="https://trivy.dev/v0.17.2/imgs/overview.png"
+loading="lazy"
+alt="ساختار Trivy"
+>&lt;/p>
+&lt;p>پویشگر‌های امنیتی برای شناسایی آسیب‌پذیری‌ها نیاز دارند که نسخه‌ی بسته‌ها و کتابخانه‌های نصب‌شده را شناسایی کنند. سپس با استفاده از فهرستی از آسیب‌پذیری‌هایی که در اختیار دارند (مثلاً دیتابیس &lt;strong>&lt;a class="link" href="https://nvd.nist.gov/vuln" target="_blank" rel="noopener"
+>NVD&lt;/a>&lt;/strong>, &lt;strong>&lt;a class="link" href="https://access.redhat.com/security/security-updates/cve" target="_blank" rel="noopener"
+>Red Hat&lt;/a>&lt;/strong>) بسته‌ها و کتابخانه‌های آسیب‌پذیر را شناسایی و گزارش می‌کنند. برای مثال برای استخراج فهرست بسته‌های موجود در سیستم‌عامل‌ها می‌توانند از مسیرهای &lt;code>/var/lib/dpkg/&lt;/code> یا &lt;code>/lib/apk/db/&lt;/code> اطلاعات لازم را به‌دست بیاورند. در تصویر زیر یک نمونه از محتویات فایل &lt;code>/var/lib/dpkg/status&lt;/code> نمایش داده شده است.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">grep Package -A9 /var/lib/dpkg/status
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1.webp"
+width="858"
+height="599"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1_hu_5c4ee60fcbf6d0c5.webp 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1_hu_7f7749a02e275c5b.webp 1024w"
+loading="lazy"
+alt="پکیج‌های نصب شده در سیستم"
+class="gallery-image"
+data-flex-grow="143"
+data-flex-basis="343px"
+>&lt;/p>
+&lt;p>اگر ایمیج یک کانتینر به جهت کاهش حجم ایمیج strip شده باشد و اطلاعاتی نظیر اطلاعات فوق از آن حذف شده باشد احتمالا Trivy و سایر پویشگر‌های مشابه در این فاز &lt;a class="link" href="" >نمی‌توانند به درستی عمل کنند&lt;/a>.&lt;/p>
+&lt;p>برای استخراج فهرست کتابخانه‌های استفاده شده نیز Trivy از فایل‌های معینی استفاده می‌کند. فهرست این فایل‌ها بر اساس زبان‌های برنامه‌نویسی در این لینک آورده شده است. برای مثال در پایتون فایل‌های Pipfile.lock, poetry.lock و requirements.txt در زمان پویش مخزن یا فایل‌سیستم مورد استفاده قرار می‌گیرد.&lt;/p>
+&lt;p>برای پویش امنیتی ایمیج کانتینر‌ها ابزارهای جایگزین دیگری نظیر &lt;a class="link" href="https://github.com/quay/clair" target="_blank" rel="noopener"
+>Clair&lt;/a>, &lt;a class="link" href="https://github.com/anchore" target="_blank" rel="noopener"
+>Anchore&lt;/a> وجود دارد. در
+مقایسه‌هایی بین این ابزارها صورت گرفته است. غیر از ویژگی‌هایی که در صفحه‌ی معرفی پروژه در گیت‌هاب درج شده است، بر اساس تجربه‌ی ما ویژگی‌های زیر در Trivy قابل توجه است.&lt;/p>
+&lt;p>&lt;strong>- ساده بودن استقرار و بکارگیری&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>- سرعت بالا در اجرای پویش&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>- صحت عملکرد و میزان False/Positive کمتر نسبت به ابزارهای مشابه&lt;/strong>&lt;/p>
+&lt;p>&lt;strong>- انطباق با فرآیند CI/CD&lt;/strong>&lt;/p>
+&lt;h2 id="بررسی-قابلیتهای-مهم-trivy">بررسی قابلیت‌های مهم Trivy
+&lt;/h2>&lt;p>در این قسمت قابلیت‌های مهم Trivy نظیر پویش ایمیج کانتینر، پویش فایل سیستم و پویش تنظیمات ناامن در مانیفیست‌ها را با مثال‌ مرور می‌کنیم. شما هم می‌توانید با نصب کردن Trivy از طریق دستور زیر مثال‌های که در بخش بعدی آورده شده است را امتحان کنید. با اجرای دستور زیر نسخه‌ی ۰.۲۱.۲ بر روی سیستم‌عامل شما نصب خواهد شد.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh &lt;span class="p">|&lt;/span> sh -s -- -b /usr/local/bin v0.21.2
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;h3 id="پویش-ایمیج-کانتینر">پویش ایمیج کانتینر
+&lt;/h3>&lt;p>همان‌طور که اشاره کردیم Trivy یک ابزار برای پویش آسیب‌پذیری‌های شناخته شده در ایمیج کانتینرها می‌باشد. برای پویش یک ایمیج می‌توانیم از دستور زیر استفاده کنیم.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;span class="lnt">5
+&lt;/span>&lt;span class="lnt">6
+&lt;/span>&lt;span class="lnt">7
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 &lt;span class="p">|&lt;/span> jq &lt;span class="s2">&amp;#34;.Results[].Vulnerabilities[].VulnerabilityID&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">&amp;#34;CVE-2021-33574&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">&amp;#34;CVE-2021-35942&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">&amp;#34;CVE-2020-1751&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="s2">&amp;#34;quotCVE-2020-1752&amp;#34;&lt;/span>
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">...
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>در مثال بالا فهرست آسیب‌پذیری‌های شناخته شده ایمیج httpd نسخه‌ی ۲.۴.۴۳ استخراج شده است. در زمان اجرا می‌توان از سوییچ‌های زیر برای فیلتر کردن پویش استفاده کرد.&lt;/p>
+&lt;h3 id="فیلتر-کردن-آسیبپذیریها">فیلتر کردن آسیب‌پذیری‌ها
+&lt;/h3>&lt;p>استفاده از ignore-unfixed برای نادیده گرفتن آسیب‌پذیری‌هایی که فاقد وصله هستند و تاکنون رفع نشده اند.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --ignore-unfixed
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>فیلتر کردن آسیب‌پذیری‌ها بر اساس شدت با استفاده از severity.
+مثلا:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --severity HIGH,CRITICAL --ignore-unfixed
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>مشخص کردن یک فهرست برای نادیده گرفتن آسیب‌پذیری‌های خاص در زمان پویش
+.
+برای اینکار باید در یک فایل به نام .trivyignore شناسه‌ی آسیب‌پذیری‌ها را وارد کنیم. مثلا:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ cat .trivyignore
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">CVE-2021-33574
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">CVE-2021-35942
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>و سپس&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">$ trivy image hub.hamdocker.ir/library/httpd:2.4.43
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>در مثال بالا در زمان پویش، آسیب‌پذیری‌های CVE-2021-33574 و CVE-2021-35942 نادیده گرفته می‌شود. همچنین با استفاده از OPA می‌توانید فیلتر کردن آسیب‌پذیری‌ها را انجام دهد یا بر عکس مثال بالا، تعیین کنید که فقط یک آسیب‌پذیری خاص مثل log4shell در ایمیج‌ها بررسی شود.&lt;/p>
+&lt;h3 id="اختصاصی-کردن-فرمت-خروجی">اختصاصی کردن فرمت خروجی
+&lt;/h3>&lt;p>فیلتر کردن نمایش و ذخیره کردن خروجی در یک فایل با استفاده از output و format&lt;/p>
+&lt;p>به صورت پیش‌فرض Trivy نتیجه‌ی آزمایش را در حالت جدول مانندی در خروجی نمایش می‌دهد. با استفاده از format , output می‌توانید فرمت خروجی را تغییر دهید. مثلا:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --format json --output result.json
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>همچنین با استفاده از فرمت template می‌توانید فرمت خروجی اختصاصی خودتان را بسازید.&lt;/p>
+&lt;h3 id="پویش-فایل-سیستم">پویش فایل سیستم
+&lt;/h3>&lt;p>یکی دیگر از قابلیت‌های مهم Trivy امکان پویش فایل سیستم می‌باشد. با استفاده از این قابلیت می‌توان پکیج‌های مورد استفاده در یک پروژه (به جای کانتینر) را مورد پویش قرار داد. برای مثال در پروژه‌ی زیر نسخه‌های آسیب‌پذیر کتابخانه‌های پرکاربرد requests و pillow مورد استفاده قرار گرفته است.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1.png"
+width="929"
+height="141"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1_hu_cba56c7ec5089e16.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1_hu_6e915b6ec7854321.png 1024w"
+loading="lazy"
+alt="محتویات فایل requirements.txt پروژه"
+class="gallery-image"
+data-flex-grow="658"
+data-flex-basis="1581px"
+>&lt;/p>
+&lt;p>با استفاده از دستور زیر پروژه مورد آزمایش قرار گرفته است. Trivy به صورت خودکار فایل requirements.txt را شناسایی و تجزیه می‌کند و سپس اقدام به شناسایی آسیب‌پذیری در پکیج‌ها می‌نماید. مسیر قرار گرفتن فایل requirements.txt و بقیه‌ی فایل‌های مشابه برای Trivy اهمیتی ندارد.&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy fs /tmp/vulnerable_app
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2.png"
+width="1089"
+height="445"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2_hu_cd7bb569eaaacff.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2_hu_58b4633361f69d87.png 1024w"
+loading="lazy"
+alt="شناسایی آسیب‌پذیری‌های شناخته‌شده در کتابخانه‌های استفاده شده در پروژه "
+class="gallery-image"
+data-flex-grow="244"
+data-flex-basis="587px"
+>&lt;/p>
+&lt;p>از همین ویژگی پویش فایل سیستم می‌توان برای اجرای عملیات پویش در زمان ساخت ایمیج یا در داخل یک کانتینر نیز استفاده کرد. برای مثال یک فایل requirements.txt و یک Dockerfile با محتویات زیر ایجاد کنید:&lt;/p>
+&lt;div dir=ltr>requirements.txt&lt;/div>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">requests==2.6.0
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;div dir=ltr>Dockerfile&lt;/div>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;span class="lnt">2
+&lt;/span>&lt;span class="lnt">3
+&lt;/span>&lt;span class="lnt">4
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-fallback" data-lang="fallback">&lt;span class="line">&lt;span class="cl">FROM hub.hamdocker.ir/library/python:3.7-alpine3.11
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">COPY requirements.txt .
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">RUN apk add curl \
+&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl"> &amp;amp;&amp;amp; curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/master/contrib/install.sh | sh -s -- -b /usr/local/bin &amp;amp;&amp;amp; trivy fs --exit-code 1 --no-progress /
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>سپس با دستور زیر فرایند ساختن (build) ایمیج را فراخوانی کنید:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">docker build -t test-fs .
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>بعد از اجرای دستور فوق فرایند ساختن ایمیج به علت وجود آسیب‌پذیری در بسته‌های سیستم‌عامل (نسخه‌ی قدیمی Alpine) و همین‌طور آسیب‌پذیری &lt;a class="link" href="https://nvd.nist.gov/vuln/detail/CVE-2018-18074" target="_blank" rel="noopener"
+>CVE-2018-18074&lt;/a> در کتابخانه‌ی requests با خطا خاتمه می‌باید. در تصاویر زیر این مورد نمایش داده شده است.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3.png"
+width="1339"
+height="595"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3_hu_284e0250b022bda7.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3_hu_baa95428032516fd.png 1024w"
+loading="lazy"
+alt="پویش بسته‌های سیستم‌عامل توسط Trivy"
+class="gallery-image"
+data-flex-grow="225"
+data-flex-basis="540px"
+>&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4.png"
+width="1353"
+height="276"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4_hu_3d20eee32ab67cb.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4_hu_59f1ee76a14a69d8.png 1024w"
+loading="lazy"
+alt="پویش کتابخانه‌های معین شده در requirements.txt توسط Trivy"
+class="gallery-image"
+data-flex-grow="490"
+data-flex-basis="1176px"
+>&lt;/p>
+&lt;h3 id="پویش-تنظیمات-ناامن-misconfiguration">پویش تنظیمات ناامن (Misconfiguration)
+&lt;/h3>&lt;p>توانایی شناسایی misconfiguration در سطح فایل‌های تنظیمات (مانیفست‌های) مربوط به Docker, Kubernetes, Terrafrom و &amp;hellip; قابلیت بسیار مهمی دیگری است که در Trivy پیاده‌سازی شده است. با استفاده از conf می‌توان تنظیمات خطرناک در این فایل‌ها را شناسایی کرد. برای مثال در زیر مانیفست ساخت یک پاد در Kubernetes نشان داده شده است. در تعریف این پاد دو مورد ناامن استفاده شده است.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5.png"
+width="523"
+height="96"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5_hu_6191d9fc103c2b84.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5_hu_548fd8149aa7a18c.png 1024w"
+loading="lazy"
+alt="استفاده از capability خطرناک SYS_ADMIN و حالت privileged در تعریف pod"
+class="gallery-image"
+data-flex-grow="544"
+data-flex-basis="1307px"
+>&lt;/p>
+&lt;p>مورد اول استفاده از capability SYS_ADMIN و مورد دوم اجرای کانتینر در حالت privileged می‌باشد. با استفاده از conf در مسیر جاری که فایل تعریف پاد در آن قرار دارد را مورد آزمایش قرار می‌دهیم:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-bash" data-lang="bash">&lt;span class="line">&lt;span class="cl">$ trivy conf --severity HIGH .
+&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6.png"
+width="1130"
+height="581"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6_hu_2c1955971d60c164.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6_hu_e3e4822e728e3d95.png 1024w"
+loading="lazy"
+alt="شناسایی موارد خطرناک توسط Trivy"
+class="gallery-image"
+data-flex-grow="194"
+data-flex-basis="466px"
+>&lt;/p>
+&lt;p>همان‌طور که در تصویر بالا مشاهده می‌کنید Trivy فایل‌های موجود در مسیر جاری را تجزیه کرده و نوع آن‌ها را نیز به درستی از نوع مانیفست‌های Kubernetes تشخیص داده و هر دو تنظیم ناامن را نیز شناسایی کرده است. در مسیری که برای پویش تعیین می‌کنیم اگر فایل‌های دیگری نیز وجود داشته باشد Trivy می‌تواند آنها را شناسایی و تحلیل کند. برای تسلط بیشتر بر این قابلیت پیشنهاد می‌کنم &lt;a class="link" href="https://github.com/aquasecurity/trivy/tree/main/examples" target="_blank" rel="noopener"
+>مثال‌هایی&lt;/a> که در مخزن پروژه آورده شده است را مطالعه کنید. همچنین برای آشنایی با سایر ویژگی‌ها نظیر حالت client/server و همچنین مطالعه‌ی دقیق‌تر راجع به آنها می‌توانید به آخرین نسخه‌ی مستندات پروژه Trivy در &lt;a class="link" href="https://trivy.dev/latest/docs/" target="_blank" rel="noopener"
+>اینجا&lt;/a> مراجعه کنید.&lt;/p>
+&lt;h2 id="استفاده-از-trivy-در-فرایند-cicd">استفاده از Trivy در فرایند CI/CD
+&lt;/h2>&lt;p>در چرخه‌ی توسعه‌ی نرم‌افزار، اگر تست امنیت از گام‌های اولیه و به‌صورت مداوم انجام شود اثرگذاری بسیار زیادی خواهد داشت. برای خودکار کردن پویش ایمیج کانتینرها، در چرخه‌ی &lt;strong>CI/CD&lt;/strong> و هنگام ساخت ایمیج‌ها، بررسی‌های لازم را انجام دهید و در صورت کشف آسیب‌پذیری از انتشار نسخه‌ی ناامن جلوگیری کنید.&lt;/p>
+&lt;p>در GitLab ، در فایل &lt;code>.gitlab-ci.yml&lt;/code> یک فاز برای پویش آسیب‌پذیری‌ها تعریف کنید. نمونه زیر، پس از &lt;strong>build&lt;/strong> و &lt;strong>push&lt;/strong> ایمیج، در فاز &lt;strong>test&lt;/strong> پویش را انجام می‌دهد:&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt"> 1
+&lt;/span>&lt;span class="lnt"> 2
+&lt;/span>&lt;span class="lnt"> 3
+&lt;/span>&lt;span class="lnt"> 4
+&lt;/span>&lt;span class="lnt"> 5
+&lt;/span>&lt;span class="lnt"> 6
+&lt;/span>&lt;span class="lnt"> 7
+&lt;/span>&lt;span class="lnt"> 8
+&lt;/span>&lt;span class="lnt"> 9
+&lt;/span>&lt;span class="lnt">10
+&lt;/span>&lt;span class="lnt">11
+&lt;/span>&lt;span class="lnt">12
+&lt;/span>&lt;span class="lnt">13
+&lt;/span>&lt;span class="lnt">14
+&lt;/span>&lt;span class="lnt">15
+&lt;/span>&lt;span class="lnt">16
+&lt;/span>&lt;span class="lnt">17
+&lt;/span>&lt;span class="lnt">18
+&lt;/span>&lt;span class="lnt">19
+&lt;/span>&lt;span class="lnt">20
+&lt;/span>&lt;span class="lnt">21
+&lt;/span>&lt;span class="lnt">22
+&lt;/span>&lt;span class="lnt">23
+&lt;/span>&lt;span class="lnt">24
+&lt;/span>&lt;span class="lnt">25
+&lt;/span>&lt;span class="lnt">26
+&lt;/span>&lt;span class="lnt">27
+&lt;/span>&lt;span class="lnt">28
+&lt;/span>&lt;span class="lnt">29
+&lt;/span>&lt;span class="lnt">30
+&lt;/span>&lt;span class="lnt">31
+&lt;/span>&lt;span class="lnt">32
+&lt;/span>&lt;span class="lnt">33
+&lt;/span>&lt;span class="lnt">34
+&lt;/span>&lt;span class="lnt">35
+&lt;/span>&lt;span class="lnt">36
+&lt;/span>&lt;span class="lnt">37
+&lt;/span>&lt;span class="lnt">38
+&lt;/span>&lt;span class="lnt">39
+&lt;/span>&lt;span class="lnt">40
+&lt;/span>&lt;span class="lnt">41
+&lt;/span>&lt;span class="lnt">42
+&lt;/span>&lt;span class="lnt">43
+&lt;/span>&lt;span class="lnt">44
+&lt;/span>&lt;span class="lnt">45
+&lt;/span>&lt;span class="lnt">46
+&lt;/span>&lt;span class="lnt">47
+&lt;/span>&lt;span class="lnt">48
+&lt;/span>&lt;span class="lnt">49
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">stages&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">build&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">test&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">build&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">stage&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">build&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">docker:stable&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">script&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">export IMAGE=&amp;#34;registry.hamdocker.ir/GROUP_NAME/PROJECT_NAME&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">docker login -u &amp;#34;$REGISTRY_USER&amp;#34; -p &amp;#34;$REGISTRY_PASSWORD&amp;#34; &amp;#34;$REGISTRY&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">docker build -t PROJECT_NAME:$CI_COMMIT_SHORT_SHA .&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">docker image tag PROJECT_NAME:$CI_COMMIT_SHORT_SHA $IMAGE:$CI_COMMIT_SHORT_SHA&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">docker image push $IMAGE:$CI_COMMIT_SHORT_SHA&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w">&lt;/span>&lt;span class="nt">container_scanning&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">stage&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">test&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">image&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">name&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">hub.hamdocker.ir/aquasec/trivy:latest&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">entrypoint&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="p">[&lt;/span>&lt;span class="s2">&amp;#34;&amp;#34;&lt;/span>&lt;span class="p">]&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">variables&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">GIT_STRATEGY&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">none&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">TRIVY_USERNAME&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;$REGISTRY_USER&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">TRIVY_PASSWORD&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;$REGISTRY_PASSWORD&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">TRIVY_AUTH_URL&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="s2">&amp;#34;$REGISTRY&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">FULL_IMAGE_NAME&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">registry.hamdocker.ir/GROUP_NAME/PROJECT_NAME:$CI_COMMIT_SHORT_SHA&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">script&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">trivy --version&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># پاکسازی کش ایمیج‌ها (پایگاه‌داده حذف نمی‌شود)&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">trivy image --clear-cache&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># به‌روزرسانی دیتابیس آسیب‌پذیری‌ها&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">trivy image --download-db-only --no-progress --cache-dir .trivycache/&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># تولید گزارش GitLab&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">trivy image --exit-code 0 --cache-dir .trivycache/ --no-progress \&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>--&lt;span class="l">format template --template &amp;#34;@/contrib/gitlab.tpl&amp;#34; \&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>--&lt;span class="l">output &amp;#34;gl-container-scanning-report.json&amp;#34; &amp;#34;$FULL_IMAGE_NAME&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="c"># شکست Job در صورت وجود CRITICAL&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">trivy image --exit-code 1 --cache-dir .trivycache/ --severity CRITICAL --no-progress &amp;#34;$FULL_IMAGE_NAME&amp;#34;&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">cache&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">paths&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">.trivycache/&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">artifacts&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">when&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">always&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">paths&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">gl-container-scanning-report.json&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">reports&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">container_scanning&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">gl-container-scanning-report.json&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">only&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>&lt;span class="nt">refs&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;span class="line">&lt;span class="cl">&lt;span class="w"> &lt;/span>- &lt;span class="l">master&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>برای استفاده از این مثال باید در قسمت variables در تعریف FULL_IMAGE_NAME نام گروه و نام پروژه را وارد کنید. مثلا به صورت زیر&lt;/p>
+&lt;div class="highlight">&lt;div class="chroma">
+&lt;table class="lntable">&lt;tr>&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code>&lt;span class="lnt">1
+&lt;/span>&lt;/code>&lt;/pre>&lt;/td>
+&lt;td class="lntd">
+&lt;pre tabindex="0" class="chroma">&lt;code class="language-yaml" data-lang="yaml">&lt;span class="line">&lt;span class="cl">&lt;span class="nt">FULL_IMAGE_NAME&lt;/span>&lt;span class="p">:&lt;/span>&lt;span class="w"> &lt;/span>&lt;span class="l">registry.hamdocker.ir/milad/myapp:$CI_COMMIT_SHORT_SHA&lt;/span>&lt;span class="w">
+&lt;/span>&lt;/span>&lt;/span>&lt;/code>&lt;/pre>&lt;/td>&lt;/tr>&lt;/table>
+&lt;/div>
+&lt;/div>&lt;p>پس از اضافه کردن این فاز پس از هر commit در مخزن فرآیند build اجرا می‌شود و بعد از آن در فرآیند test عملیات پویش امنیتی ایمیج کانتینر صورت می‌گیرد. در این فاز بعد از آپدیت کردن دیتابیس Trivy پویش کامل ایمیج صورت می‌گیرد که نتیجه‌ی اجرای آن در فایل gl-container-scanning-report.json ذخیره می‌شود. در تصویر زیر مشاهده می‌کنیم که فرآیند پویش امنیتی به دلیل وجود آسیب‌پذیری با خطا خاتمه یافته است. در سمت راست در قسمت Job artifact می‌توانید گزارش پویش را دانلود و مشاهده کنید.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7.png"
+width="1337"
+height="588"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7_hu_9cc17832f19e3d43.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7_hu_9cb4bab6dd328bbc.png 1024w"
+loading="lazy"
+alt="فرآیند test مربوط به پویش امنیتی با شکست خاتمه یافته است"
+class="gallery-image"
+data-flex-grow="227"
+data-flex-basis="545px"
+>&lt;/p>
+&lt;p>همچنین گزارش این پویش در بخش Security Dashboard &amp;gt; Vulnerability Report در دسترس می‌باشد.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8.png"
+width="1297"
+height="575"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8_hu_758aaa688f4fd0b9.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8_hu_9a3436dd4e14e8a3.png 1024w"
+loading="lazy"
+alt="نمایش فهرست آسیب‌پذیری‌های کشف شده در این پروژه در قسمت Vulnerability Report"
+class="gallery-image"
+data-flex-grow="225"
+data-flex-basis="541px"
+>&lt;/p>
+&lt;p>در تصویر بالا مشاهده می‌کنیم که آسیب‌پذیری‌های کشف شده در فرآیند CI/CD در قسمت Vulnerability Report آورده شده است که برای افراد دخیل در پروژه قابل پیگیری می‌باشد.&lt;/p>
+&lt;p>همان‌طور که اشاره شد با هربار commit کردن در مخزن این فرآیند اجرا خواهد شد و اگر پروژه دارای آسیب‌پذیری با درجه‌ی CRITICAL باشد، job فعلی با خطا خاتمه می‌یابد و فرآیند deploy صورت نخواهد گرفت.&lt;/p>
+&lt;p>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9.png"
+width="1253"
+height="570"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9_hu_d69696d2c71fc24d.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9_hu_fb03308870ee3823.png 1024w"
+loading="lazy"
+alt="فرآیند test با خطا مواجه شده است."
+class="gallery-image"
+data-flex-grow="219"
+data-flex-basis="527px"
+>&lt;/p>
+&lt;h2 id="نتیجهگیری">نتیجه‌گیری
+&lt;/h2>&lt;p>در این نوشتار دیدیم که استفاده از ابزار Trivy ساده است و به راحتی می‌توان از آن در توسعه‌ی یک پروژه‌ و فرآیند CI/CD استفاده کرد. بروز بودن این ابزارها و قدرت‌شان در تشخیص پکیج‌ها و وابستگی‌ها در سطح سیستم‌عامل و زبان‌های برنامه‌نویسی بسیار قابل اتکاست، که با بهره‌گیری از آنها بخش زیادی از آسیب‌پذیری‌ها به سرعت در فاز توسعه کشف می‌شوند و از انتشار نسخه‌ی ناامن جلوگیری خواهد شد. در نظر داشته باشید که ممکن است حتی پس از انتشار یک نسخه نیز آسیب‌پذیری‌های در بسته‌ها و کتابخانه‌ها کشف شود. در این شرایط پیشنهاد می‌شود که با خودکار کردن فرآیند تست، به صورت پیوسته در زمان‌های معینی در طول روز همه‌ی کانتینر‌های در حال اجرا در کلاستر را از جنبه‌ی امنیت تست کنید.&lt;/p>
+&lt;/div></description></item></channel></rss>
