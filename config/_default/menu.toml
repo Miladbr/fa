@@ -18,7 +18,7 @@ icon = "brand-github"
 [[social]]
 identifier = "twitter"
 name = "Twitter"
-url = "https://x.com/miladbr"
+url = "https://x.com/milad_bahari"
 
 [social.params]
 icon = "brand-twitter"
