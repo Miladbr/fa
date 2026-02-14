@@ -1,0 +1,385 @@
+<!doctype html><html lang=fa dir=rtl><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="بررسی UTS، PID، Mount و Network برای ایزوله\u200cسازی پردازه\u200cها در لینوکس با unshare/chroot و نمونه\u200cدستورات عملی."><title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول</title><link rel=canonical href=https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="فضانام\u200cها و ایزوله کردن پردازه\u200cها در لینوکس — قسمت اول"><meta property='og:description' content="بررسی UTS، PID، Mount و Network برای ایزوله\u200cسازی پردازه\u200cها در لینوکس با unshare/chroot و نمونه\u200cدستورات عملی."><meta property='og:url' content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/'><meta property='og:site_name' content="Milad's blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Linux'><meta property='article:tag' content='Containerization'><meta property='article:tag' content='Devops'><meta property='article:tag' content='Security'><meta property='article:published_time' content='2021-03-02T13:04:26+00:00'><meta property='article:modified_time' content='2021-03-02T13:04:26+00:00'><meta property='og:image' content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover.png'><meta name=twitter:title content="فضانام\u200cها و ایزوله کردن پردازه\u200cها در لینوکس — قسمت اول"><meta name=twitter:description content="بررسی UTS، PID، Mount و Network برای ایزوله\u200cسازی پردازه\u200cها در لینوکس با unshare/chroot و نمونه\u200cدستورات عملی."><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky compact"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=منو>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_32fff00196f9b3ea.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>Milad's blog</a></h1><h2 class=site-description>تحلیل‌ها، نکته‌ها و نوشته‌های من درباره امنیت اطلاعات</h2></div></header><ol class=menu-social><li><a href=https://github.com/Miladbr target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://linkedin.com/in/miladbr/ target=_blank title=LinkedIn rel=me><svg class="icon icon-tabler icon-tabler-brand-linkedin" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5"/><path d="M8 8h.01"/><path d="M16 16v-3a2 2 0 00-4 0v3"/></svg></a></li><li><a href=https://x.com/milad_bahari target=_blank title=Twitter rel=me><svg class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 4.01c-1 .49-1.98.689-3 .99-1.121-1.265-2.783-1.335-4.38-.737S11.977 6.323 12 8v1c-3.245.083-6.135-1.395-8-4 0 0-4.182 7.433 4 11-1.872 1.247-3.739 2.088-6 2 3.308 1.803 6.913 2.423 10.034 1.517 3.58-1.04 6.522-3.723 7.651-7.742a13.84 13.84.0 00.497-3.753C20.18 7.773 21.692 5.25 22 4.009z"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>حالت شب</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">فهرست</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#فضانامها-namespaces-در-لینوکس>فضا‌نام‌ها (namespaces) در لینوکس</a><ol><li><a href=#فضانامهای-موجود-در-لینوکس>فضانام‌های موجود در لینوکس</a></li></ol></li><li><a href=#unshare-چیست>Unshare چیست؟</a></li><li><a href=#فضانام-uts>فضانام UTS</a></li><li><a href=#فضانام-شناسه-پردازهها-pid>فضانام شناسهٔ پردازه‌ها (PID)</a></li><li><a href=#فضانام-mount>فضانام Mount</a></li><li><a href=#فضانام-شبکه-network>فضانام شبکه (Network)</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover_hu_d1ac4fec4614b1a9.png srcset="/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover_hu_d1ac4fec4614b1a9.png 800w, /p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover_hu_887335b5abf2d995.png 1600w" width=800 height=437 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول"></a></div><div class=article-details><header class=article-category><a href=/categories/devops/ style=background-color:#0400ff;color:#fff>DevOps
+</a><a href=/categories/security/>Security</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول</a></h2><h3 class=article-subtitle>بررسی UTS، PID، Mount و Network برای ایزوله‌سازی پردازه‌ها در لینوکس با unshare/chroot و نمونه‌دستورات عملی.</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2021-03-02T13:04:26Z>مارس 02, 2021</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>مطالعه در 17 دقیقه</time></div></footer></div></header><section class=article-content><div dir=rtl><p>در این نوشتار می‌خواهیم چگونگی ایزوله کردن یک پردازه در سیستم‌عامل لینوکس را بررسی کنیم. اگر با Docker یک کانتینر ایجاد کرده باشید، در زمان کار با آن احساس کرده‌اید که داخل آن مشابه محیط یک ماشین مجازی است. مثلاً متوجه شده‌اید که از دید یک پردازه‌ی در حال اجرا در داخل کانتینر، فهرست پردازه‌ها، شبکه و فایل‌سیستم با ماشین میزبان متفاوت است، همچنین میزان منابعی مانند RAM و CPU از دید پردازه‌های داخل کانتینر محدودتر از کل مقدار در اختیار میزبان می‌باشد.</p><p>این سطح از ایزوله‌کردن در سیستم‌عامل لینوکس توسط ویژگی‌های <strong>namespace (فضانام)</strong>، <strong>cgroups</strong>, <strong>pivot_root</strong> و &mldr; پیاده‌سازی می‌شود. ایزوله کردن پردازه‌ها موضوع کلیدی در مورد نحوه‌ی عمل‌کرد کانتینرها می‌باشد. فضا‌نام‌ها منابعی را به کانتینر اختصاص می‌دهند که کاملاً مستقل از میزبان (host) و بقیه‌ی کانتینر‌های مجاور می‌باشد.</p><p>این نوشتار در دو قسمت تنظیم شده است که در ادامه <strong>قسمت اول</strong> آن را می‌خوانید. قسمت دوم این مطلب را می‌توانید از <a class=link href=/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b2/>اینجا</a> دنبال کنید.</p><h2 id=فضانامها-namespaces-در-لینوکس>فضا‌نام‌ها (namespaces) در لینوکس</h2><p>فضانام یک ابزار برای محدود کردن دید پردازه‌ها نسبت به ماشین میزبان است. در kernel لینوکس فضانام‌های مختلفی وجود دارد که استفاده از هر کدام از آن‌ها اجازه می‌دهد یک پردازه در همان فضانام (مثلا شبکه) دید مختص به خود را داشته باشد. مثلاً دو پردازه‌ی در حال اجرا در میزبان می‌توانند فایل سیستم مشترکی داشته باشند ولی دید آن‌ها نسبت به کارت شبکه و تنظیمات آن متفاوت باشد و احساس کنند در دو شبکه‌ی مجزا قرار دارند. به خاطر همین سطح از ایزوله کردن، فضانام‌ها یکی از ابزارهای کلیدی برای کانتینری کردن برنامه‌ها هستند.</p><p><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns.jpeg width=1000 height=659 srcset="/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns_hu_a83b64bd9ca635dd.jpeg 480w, /p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns_hu_d6f8dd6200a36f06.jpeg 1024w" loading=lazy alt="منبع: https://twitter.com/b0rk/status/1240364585766576128" class=gallery-image data-flex-grow=151 data-flex-basis=364px></p><h3 id=فضانامهای-موجود-در-لینوکس>فضانام‌های موجود در لینوکس</h3><div dir=ltr><ul><li>Unix Time Sharing (<strong>uts</strong>)</li><li>Process ID (<strong>pid</strong>)</li><li>Mount (<strong>mnt</strong>)</li><li>Network (<strong>net</strong>)</li><li>User ID / Group ID (<strong>user</strong>)</li><li>Inter-Process Communications (<strong>ipc</strong>)</li><li>Control Groups (<strong>cgroup</strong>)</li><li><strong>time</strong></li></ul></div><p>برای مشاهدهٔ فضانام‌های موجود در سیستم‌عامل می‌توانید از دستور <code>lsns</code> استفاده کنید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo lsns
+</span></span></code></pre></td></tr></table></div></div><p>خروجی نمونه:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ sudo lsns
+</span></span><span class=line><span class=cl>NS TYPE   NPROCS   PID USER             COMMAND
+</span></span><span class=line><span class=cl>4026531835 cgroup    405     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026531836 pid       354     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026531837 user      361     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026531838 uts       397     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026531839 ipc       397     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026531840 mnt       385     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>4026532009 net       353     1 root             /sbin/init splash
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p>به صورت پیش‌فرض در ماشین میزبان از هر نوع فضانام یک مورد وجود دارد که توسط پردازه‌ها مورد استفاده قرار می‌گیرد. پردازه‌ها می‌توانند فضانام‌های بیشتری از نو‌ع‌های مختلفی ایجاد کنند و به آن متصل شوند. البته هر پردازه فقط می‌تواند در یک فضانام از یک نوع باشد. همچنین در صورتی که فضانام خالی باشد (مثلا هیچ‌ پردازه‌ای به آن متصل نشده باشد یا هیچ bind mount در آن وجود نداشته باشد و &mldr;) کرنل به صورت خودکار آن را حذف می‌کند. در ادامه به بررسی فضانام‌ها می‌پردازیم.</p><h2 id=unshare-چیست>Unshare چیست؟</h2><p>در فضای سیستم‌عامل وقتی شما درخواست اجرای یک برنامه را صادر می‌کنید، سیستم‌عامل با اجرای یک سری روال‌ها و سپس کپی‌کردن کد برنامه در حافظه‌ی اصلی (رم) یک پردازه‌ی جدید ایجاد می‌کند و به اصطلاح آن برنامه را اجرا می‌کند. در این فضا دو مفهوم پدر (parent) و فرزند (child) وجود دارد که به صورت پیش‌فرض با هم داده‌های مشترکی دارند (برای اطلاعات بیشتر به <a class=link href=https://man7.org/linux/man-pages/man2/fork.2.html target=_blank rel=noopener>fork</a> و <a class=link href=https://man7.org/linux/man-pages/man2/clone.2.html target=_blank rel=noopener>clone</a> مراجعه کنید). برای ایزوله‌ کردن پردازه‌ها و حذف این نقاط مشترک می‌توان از یک systemcall به نام unshare استفاده کرد. در ‌واقع با استفاده از unshare می‌توان یک برنامه را با فضانام‌هایی مختص به خودش که با پدرش یا دیگر پردازه‌های در حال اجرا مشترک نباشد، اجرا نمود.</p><p>اگر علاقه‌مند هستید جزئیات بیشتری بدانید راجع به <a class=link href=https://man7.org/linux/man-pages/man2/setns.2.html target=_blank rel=noopener>set_ns</a> <a class=link href=https://man7.org/linux/man-pages/man2/clone.2.html target=_blank rel=noopener>،clone</a> <a class=link href=https://man7.org/linux/man-pages/man1/nsenter.1.html target=_blank rel=noopener>،nsenter</a> و <a class=link href=https://man7.org/linux/man-pages/man2/pivot_root.2.html target=_blank rel=noopener>pivot_root</a> مطالعه کنید.</p><h2 id=فضانام-uts>فضانام UTS</h2><p>هر ماشین دارای یک شناسه‌ است که به آن hostname گفته می‌شود. درست مانند URL هر وب‌سایت از این شناسه می‌توان برای اشاره به آن ماشین در داخل آن ماشین یا شبکه استفاده کرد. اگر یک ترمینال بر روی سیستم‌عامل لینوکس باز کنید با استفاده از دستور hostname می‌توانید مقدار hostname فعلی را ببینید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ hostname
+</span></span><span class=line><span class=cl>Milad-PC
+</span></span></code></pre></td></tr></table></div></div><p>با قرار دادن یک پردازه در یک فضانام UTS اختصاصی، پردازه صاحب hostname و domainname اختصاصی خواهد شد و می‌توان مقادیر دلخواهی برای hostname و domainname برای آن پردازه تنظیم کرد که این تغییر تاثیری در مقادیر مربوطه در ماشین میزبان نخواهد داشت.</p><p>تکنولوژی‌های کانتینری‌کردن (مانند داکر) به هر کانتینر یک شناسه‌ی تصادفی اختصاص می‌دهند که به صورت پیش‌فرض همین شناسه به عنوان hostname در آن کانتینر استفاده می‌شود. برای بررسی این موضوع با استفاده از دستور زیر می‌توان یک کانتینر ایجاد کرد و مقدار hostname داخل کانتینر را مشاهده نمود.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ docker run --rm -it --name hostname-test hub.hamdocker.ir/library/alpine sh
+</span></span><span class=line><span class=cl>/ <span class=c1># hostname</span>
+</span></span><span class=line><span class=cl>a6b9c92876b7
+</span></span></code></pre></td></tr></table></div></div><p>با استفاده از unshare می‌توانیم یک فضانام جدید UTS ایجاد کنیم و این مورد را آزمایش کنیم. برای اینکار باید unshare را با دسترسی کاربر root اجرا کنیم. در زمان فراخوانی unshare نوع فضانام و نام‌ برنامه‌ای که می‌خواهیم اجرا کنیم را باید وارد کنیم. در صورتی که نام برنامه وارد نشود به صورت پیش‌فرض از مقدار {SHELL}$ استفاده خواهد شد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --uts /bin/bash
+</span></span><span class=line><span class=cl>root@Milad-PC:~# hostname
+</span></span><span class=line><span class=cl>Milad-PC
+</span></span><span class=line><span class=cl>root@Milad-PC:~# hostname xyz-hostname
+</span></span><span class=line><span class=cl>root@Milad-PC:~# hostname
+</span></span><span class=line><span class=cl>xyz-hostname
+</span></span><span class=line><span class=cl>root@Milad-PC:~# <span class=nb>exit</span>
+</span></span><span class=line><span class=cl><span class=nb>exit</span>
+</span></span><span class=line><span class=cl>$ hostname
+</span></span><span class=line><span class=cl>Milad-PC
+</span></span></code></pre></td></tr></table></div></div><p>این کار باعث شده که bash داخل یک پردازه‌ی جدید که فضانام UTS مختص به خودش را دارد اجرا شود. هر برنامه‌ای که در این شل اجرا شود نیز این فضانام را به ارث خواهد برد. برای مثال همان‌طور که در بالا می‌بینید با اجرای hostname ابتدا همان مقدار تنظیم شده در ماشین میزبان نمایش داده می‌شود، سپس با تنظیم یک مقدار جدید، hostname در این فضانام تغییر می‌کند ولی در میزبان تغییر اعمال نشده است. این ایزوله کردن باعث می‌شود که میزبان و مهمان بدون تأثیر بر روی همدیگر مقادیر hostname را به مقداری دلخواه تغییر دهند.</p><h2 id=فضانام-شناسه-پردازهها-pid>فضانام شناسهٔ پردازه‌ها (PID)</h2><p>اگر شما دستور ps را داخل یک کانتینر اجرا کنید فقط پردازه‌های در حال اجرا در همان کانتینر را می‌بینید و به فهرست پردازه‌های در حال اجرا در ماشین میزبان دسترسی نخواهید داشت.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ docker run --rm -it --name pid-test hub.hamdocker.ir/library/alpine sh
+</span></span><span class=line><span class=cl>/ <span class=c1># ps -eaf</span>
+</span></span><span class=line><span class=cl>PID   USER     TIME  COMMAND
+</span></span><span class=line><span class=cl><span class=m>1</span> root      0:00 sh
+</span></span><span class=line><span class=cl><span class=m>7</span> root      0:00 ps -eaf
+</span></span></code></pre></td></tr></table></div></div><p>در ‌واقع با بهره‌برداری از فضانام PID قابلیت محدود کردن امکان دسترسی به پردازه‌های در حال اجرا در میزبان برای کانتینرها با ایزوله کردن فهرست شناسه‌ی پردازه‌ها فراهم می‌شود. برای آزمایش فضانام PID مجدداً از unshare استفاده می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --pid sh
+</span></span><span class=line><span class=cl><span class=c1># id</span>
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1># id</span>
+</span></span><span class=line><span class=cl>sh: 2: Cannot fork
+</span></span><span class=line><span class=cl><span class=c1># ls</span>
+</span></span><span class=line><span class=cl>sh: 3: Cannot fork
+</span></span><span class=line><span class=cl><span class=c1># id</span>
+</span></span><span class=line><span class=cl>sh: 4: Cannot fork
+</span></span></code></pre></td></tr></table></div></div><p>اگه به خروجی دستورات بالا دقت کنید به نظر مشکلی وجود دارد. به غیر از دستور اول، بقیه دستور‌ها با خطا مواجه شده‌اند. اگه به متن خطا دقت کنید قالب آن از چپ به راست به صورت نام دستور، شناسه‌ی پردازه و متن خطا می‌باشد. با اجرای‌ هر دستور، شناسه‌‌ی پردازه‌ها در حال افزایش است و این نشان دهنده‌ی اعمال ‌شدن فضانام PID است، اما اگر نتوان بیش از یک پردازه در این فضانام اجرا کرد، کاملاً بلااستفاده باقی می‌ماند. متن خطای دریافتی و همچنین توضیحات unshare نشان می‌دهند که:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ man unshare
+</span></span><span class=line><span class=cl>-f, --fork
+</span></span><span class=line><span class=cl>Fork  the  specified  program as a child process of unshare rather than running it directly.  This is useful when creating a new PID namespace.
+</span></span></code></pre></td></tr></table></div></div><p>پس با استفاده از fork&ndash; پردازه‌ی جدید مستقیماً به صورت یک فرزند از unshare اجرا خواهد شد. حال مجدداً یک فضانام PID ایجاد می‌کنیم. با اجرای چند دستور مشاهده می‌کنیم خطای قبل رفع شده است:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --pid --fork /bin/bash
+</span></span><span class=line><span class=cl>root@Milad-PC:/tmp# id
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span>
+</span></span><span class=line><span class=cl>root@Milad-PC:/tmp# cat /etc/hostname
+</span></span><span class=line><span class=cl>Milad-PC
+</span></span></code></pre></td></tr></table></div></div><p>سپس برای فهرست کردن پردازه‌های موجود در فضانام جدید از دستور ps استفاده می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:/tmp# ps -eaf
+</span></span><span class=line><span class=cl>UID        PID  PPID  C STIME TTY          TIME CMD
+</span></span><span class=line><span class=cl>root         <span class=m>1</span>     <span class=m>0</span>  <span class=m>0</span> فوریه18 ? 00:00:09 /sbin/init splash
+</span></span><span class=line><span class=cl>root         <span class=m>2</span>     <span class=m>0</span>  <span class=m>0</span> فوریه18 ? 00:00:00 <span class=o>[</span>kthreadd<span class=o>]</span>
+</span></span><span class=line><span class=cl>root         <span class=m>4</span>     <span class=m>2</span>  <span class=m>0</span> فوریه18 ? 00:00:00 <span class=o>[</span>kworker/0:0H<span class=o>]</span>
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>root      <span class=m>6210</span>  <span class=m>9375</span>  <span class=m>0</span> 02:02 pts/2    00:00:00 sudo unshare --pid --fork /bin/bash
+</span></span><span class=line><span class=cl>root      <span class=m>6211</span>  <span class=m>6210</span>  <span class=m>0</span> 02:02 pts/2    00:00:00 unshare --pid --fork /bin/bash
+</span></span><span class=line><span class=cl>root      <span class=m>6212</span>  <span class=m>6211</span>  <span class=m>0</span> 02:02 pts/2    00:00:00 /bin/bash
+</span></span><span class=line><span class=cl>root      <span class=m>6421</span>  <span class=m>6212</span>  <span class=m>0</span> 02:03 pts/2    00:00:00 ps -eaf
+</span></span><span class=line><span class=cl>…
+</span></span><span class=line><span class=cl>milad     <span class=m>7089</span>     <span class=m>1</span>  <span class=m>0</span> فوریه18 ? 00:00:06 /lib/systemd/systemd --user
+</span></span><span class=line><span class=cl>milad     <span class=m>7090</span>  <span class=m>7089</span>  <span class=m>0</span> فوریه18 ? 00:00:00 <span class=o>(</span>sd-pam<span class=o>)</span>
+</span></span><span class=line><span class=cl>milad     <span class=m>8536</span>  <span class=m>8426</span>  <span class=m>1</span> فوریه18 tty2 01:24:19 /usr/lib/chromium-browser/chromium-browser --type<span class=o>=</span>renderer --field-trial-handle<span class=o>=</span><span class=m>1178073432432703370</span>
+</span></span><span class=line><span class=cl>milad    <span class=m>10327</span>  <span class=m>7677</span>  <span class=m>0</span> فوریه18 pts/1 00:00:11 /usr/bin/zsh
+</span></span></code></pre></td></tr></table></div></div><p>اگر در یک کانتینر ایجاد شده مثلاً با داکر دستور ps را وارد کنید فقط پردازه‌های موجود در همان کانتینر را مشاهده خواهید کرد. با توجه به خروجی دستور ps شاید این‌طور به نظر برسد که فضانام PID جدید به درستی پردازه‌ی جدید را ایزوله نکرده و پردازه‌ی جدید به فهرست پردازه‌های در حال اجرا در میزبان دسترسی دارد اما در‌ واقع این‌طور نیست. فهرست پردازه‌های میزبان به این علت در دسترس است که دستور ps اطلاعات را از روی فایل‌های موجود در مسیر proc/ می‌خواند و پردازش می‌کند. اگه از مسیر proc/ در میزبان ls بگیرید فهرستی از دایرکتوری‌ها را مشاهده خواهید کرد که متناظر با پردازه‌های در حال اجرا در سیستم‌عامل می‌باشد که در داخل آن‌ها اطلاعات کامل پردازه‌ها به صورت فهرستی از فایل‌ها وجود دارد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ls /proc
+</span></span><span class=line><span class=cl><span class=m>1</span>      <span class=m>132</span>    <span class=m>1483</span>   <span class=m>1943</span>   <span class=m>2052</span>   <span class=m>239</span>    <span class=m>2566</span>   <span class=m>272</span>    <span class=m>321</span>   <span class=m>4510</span>  <span class=m>513</span>   <span class=m>540</span>   <span class=m>6635</span>  <span class=m>7433</span>  <span class=m>7575</span>  <span class=m>817</span>   <span class=m>9136</span>           fs           pagetypeinfo
+</span></span><span class=line><span class=cl>…
+</span></span></code></pre></td></tr></table></div></div><p>برای اینکه در فضانام جدید دستور ps فقط اطلاعات پردازه‌های موجود در همین فضانام را برگردانند باید یک مسیر proc/ مجزا برای همین فضانام وجود داشته باشد که کرنل اطلاعات پردازه‌های موجود در آن را مدیریت کند که برای پیاده‌سازی آن می‌توان از chroot استفاده کرد.</p><p>در زمان ایجاد یک کانتینر به طور پیش‌فرض به جای دسترسی کامل به فایل‌سیستم میزبان، پردازه‌ها به بخش کوچکی از فایل سیستم دسترسی خواهند داشت، چون درست بعد از ایجاد کانتینر دایرکتوری root برای پردازه‌ی اصلی داخل کانتینر تغییر می‌کند. در سیستم‌عامل لینوکس این عملیات با استفاده از chroot انجام می‌شود.</p><p>در توضیحات chroot اشاره شده است که chroot یک دستور یا shell را در دایرکتوری جدید اجرا می‌کند و همچنین اگر دستوری وارد نشود به صورت پیش‌فرض از مقدار متغیر SHELL$ استفاده خواهد کرد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ man chroot
+</span></span><span class=line><span class=cl>NAME
+</span></span><span class=line><span class=cl>chroot - run <span class=nb>command</span> or interactive shell with special root directory
+</span></span><span class=line><span class=cl>…
+</span></span><span class=line><span class=cl>If no <span class=nb>command</span> is given, run <span class=s1>&#39;&amp;quot$SHELL&amp;quot -i&#39;</span> <span class=o>(</span>default: <span class=s1>&#39;/bin/sh -i&#39;</span><span class=o>)</span>.
+</span></span></code></pre></td></tr></table></div></div><p>برای درک بهتر این فرآیند دستورات زیر را اجرا می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ mkdir /tmp/new_root_dir
+</span></span><span class=line><span class=cl>$ sudo chroot /tmp/new_root_dir
+</span></span><span class=line><span class=cl>chroot: failed to run command ‘/usr/bin/zsh’: No such file or directory
+</span></span><span class=line><span class=cl>$ sudo chroot /tmp/new_root_dir id
+</span></span><span class=line><span class=cl>chroot: failed to run command ‘id’: No such file or directory
+</span></span><span class=line><span class=cl>$ sudo chroot /tmp/new_root_dir ls
+</span></span><span class=line><span class=cl>chroot: failed to run command ‘ls’: No such file or directory
+</span></span></code></pre></td></tr></table></div></div><p>با توجه به متن‌ خطا به نظر می‌رسد که بعد از تغییر دایرکتوری root دسترسی به برنامه‌های موجود در دایرکتوری bin/ امکان‌پذیر نیست. بنابراین حتی امکان استفاده از دستوراتی مثل ls و id فراهم نیست. بنابراین تمامی فایل‌‌های مورد نیاز، باید به دایرکتوری جدید انتقال داده شود؛ کاملاً مشابه زمانی که یک کانتینر واقعی ایجاد می‌شود. یک کانتینر از روی یک image ایجاد می‌شود که آن image حاوی تمامی فایل‌هایی است که پردازه‌های موجود در آن کانتینر به آن نیاز دارند. در‌ واقع آن image دقیقاً حاوی فایل‌سیستمی است که پردازه‌ها آن را می‌بینند.</p><p>بنابراین اگر ما فایل‌سیستم یک سیستم‌عامل کوچک مثل Alpine Linux را داشته باشیم‌ می‌توانیم به آن chroot کنیم و آن را در فضانام جدید اجرا کنیم. برای انجام این کار دستورات زیر را اجرا می‌کنیم که ابتدا یک دایرکتوری جدید ایجاد می‌شود، سپس آخرین نسخه‌ی فعلی فایل‌سیستم را دانلود و استخراج می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ mkdir alpine
+</span></span><span class=line><span class=cl>$ <span class=nb>cd</span> alpine
+</span></span><span class=line><span class=cl>$ curl -o alpine.tar.gz http://dl-cdn.alpinelinux.org/alpine/v3.13/releases/x86_64/alpine-minirootfs-3.13.0-x86_64.tar.gz
+</span></span><span class=line><span class=cl>% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+</span></span><span class=line><span class=cl>Dload  Upload   Total   Spent    Left  Speed
+</span></span><span class=line><span class=cl><span class=m>100</span> 2664k  <span class=m>100</span> 2664k    <span class=m>0</span>     <span class=m>0</span>  <span class=m>15768</span>      <span class=m>0</span>  0:02:53  0:02:53 --:--:-- <span class=m>18207</span>
+</span></span><span class=line><span class=cl>$ tar -xzf alpine.tar.gz
+</span></span><span class=line><span class=cl>$ ls
+</span></span><span class=line><span class=cl>alpine.tar.gz  bin  dev  etc  home  lib  media  mnt  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
+</span></span><span class=line><span class=cl>$ rm -rf alpine.tar.gz
+</span></span></code></pre></td></tr></table></div></div><p>سپس با chroot در این دایرکتوری می‌توانیم دستورات را در مسیر جدید اجرا کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ <span class=nb>cd</span> ..
+</span></span><span class=line><span class=cl>$ sudo chroot alpine ls
+</span></span><span class=line><span class=cl>bin    dev    dst    etc    home   lib    media  mnt    opt    proc   root   run    sbin   src    srv    sys    tmp    usr    var ...
+</span></span></code></pre></td></tr></table></div></div><p>با اتمام اجرای پردازه (یا دستور) فرزند، مجدداً کنترل به پردازه‌ی پدر برمی‌گردد. برای اینکه بتوانیم دستورات بیشتری در دایرکتوری جدید اجرا کنیم می‌توانیم یک شل را به عنوان پردازه‌ی فرزند اجرا کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=o>$</span> <span class=n>sudo</span> <span class=n>chroot</span> <span class=n>alpine</span> <span class=n>sh</span>
+</span></span><span class=line><span class=cl><span class=o>/</span> <span class=c1># id</span>
+</span></span><span class=line><span class=cl><span class=n>uid</span><span class=o>=</span><span class=mi>0</span><span class=p>(</span><span class=n>root</span><span class=p>)</span> <span class=n>gid</span><span class=o>=</span><span class=mi>0</span><span class=p>(</span><span class=n>root</span><span class=p>)</span> <span class=n>groups</span><span class=o>=</span><span class=mi>0</span><span class=p>(</span><span class=n>root</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=o>/</span> <span class=c1># ls</span>
+</span></span><span class=line><span class=cl><span class=n>bin</span>    <span class=n>dev</span>    <span class=n>dst</span>    <span class=n>etc</span>    <span class=n>home</span>   <span class=n>lib</span>    <span class=n>media</span>  <span class=n>mnt</span>    <span class=n>opt</span>    <span class=n>proc</span>   <span class=n>root</span>   <span class=n>run</span>    <span class=n>sbin</span>   <span class=n>src</span>    <span class=n>srv</span>    <span class=n>sys</span>    <span class=n>tmp</span>    <span class=n>usr</span>    <span class=k>var</span>
+</span></span><span class=line><span class=cl><span class=o>/</span> <span class=c1># exit</span>
+</span></span></code></pre></td></tr></table></div></div><p>حالا با بهره‌برداری از قابلیت chroot و فضانام‌ها می‌توانیم یک فضانام PID ایجاد کرده و در زمان فراخوانی unshare دستور chroot را اجرا کنیم و سپس در داخل فضانام دایرکتوری proc/ فایل‌سیستم (image) را mount کنیم. با انجام این گام‌ها یک قدم در ایزوله کردن پردازه‌های داخل کانتینر برداشته می‌شود و جزئیات پردازه‌های میزبان از دید پردازه‌های در حال اجرا در فضانام مخفی خواهد بود. برای آزمایش این موضوع دستورات زیر را اجرا می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --pid --fork chroot alpine sh
+</span></span><span class=line><span class=cl>/ <span class=c1># mount -t proc proc proc</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># ps -eaf</span>
+</span></span><span class=line><span class=cl>PID   USER     TIME  COMMAND
+</span></span><span class=line><span class=cl><span class=m>1</span> root      0:00 sh
+</span></span><span class=line><span class=cl><span class=m>3</span> root      0:00 ps -eaf
+</span></span></code></pre></td></tr></table></div></div><h2 id=فضانام-mount>فضانام Mount</h2><p>برای اینکه پردازه‌های داخل یک کانتینر به فایل سیستم میزبان دسترسی نداشته باشد، باید بین آن‌ها مرزی ایجاد شود. با استفاده از فضانام mount می‌توان این قابلیت را برای پردازه‌ها فراهم کرد.</p><p>برای مثال در زیر ما در یک فضانام mount جدید یک bind mount ایجاد می‌کنیم. Bind mounts این قابلیت را فراهم می‌کند که بخشی از یک فایل سیستم که قبلاً mount شده را در یک دایرکتوری دیگه مجدداً mount کنید. با بهره‌برداری از این قابلیت می‌شود عملیات مختلفی مثل اشتراک گذاری فقط خواندنی، chroot jail یا کانتینری کردن را پیاده‌سازی کرد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$ sudo unshare --mount /bin/bash
+</span></span><span class=line><span class=cl>root@Milad-PC:~# mkdir src
+</span></span><span class=line><span class=cl>root@Milad-PC:~# echo &amp;quotsample&amp;quot &gt; src/test.txt
+</span></span><span class=line><span class=cl>root@Milad-PC:~# ls src
+</span></span><span class=line><span class=cl>test.txt
+</span></span><span class=line><span class=cl>root@Milad-PC:~# mkdir dst
+</span></span><span class=line><span class=cl>root@Milad-PC:~# ls dst
+</span></span><span class=line><span class=cl>root@Milad-PC:~# mount --bind src dst
+</span></span><span class=line><span class=cl>root@Milad-PC:~# ls dst
+</span></span><span class=line><span class=cl>test.txt
+</span></span><span class=line><span class=cl>root@Milad-PC:~# cat dst/test.txt
+</span></span><span class=line><span class=cl>sample
+</span></span></code></pre></td></tr></table></div></div><p>همان‌طور که می‌بینیم بعد از اعمال bind محتوای دایرکتوری src در dst نیز در دسترس است. با استفاده از findmnt می‌توانیم جزئیات بیشتری را ببینیم که این mount در این فضانام ایجاد شده است و از دید میزبان مخفی می‌باشد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:~# findmnt dst
+</span></span><span class=line><span class=cl>TARGET          SOURCE                FSTYPE OPTIONS
+</span></span><span class=line><span class=cl>/home/milad/dst /dev/sda5<span class=o>[</span>/milad/src<span class=o>]</span> ext4   rw,relatime,data<span class=o>=</span>ordered
+</span></span></code></pre></td></tr></table></div></div><p>برای مثال در یک ترمینال دیگر در میزبان و خارج از این فضانام همین دستور را اجرا می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ findmnt dst
+</span></span></code></pre></td></tr></table></div></div><p>حالا اگر همین دستور findmnt را در فضانام ساخته شده مجدداً بدون پارامتر اجرا کنیم فهرست کاملی از mountهای میزبان را مشاهده خواهیم کرد. همان‌طور که در مورد فضانام PID اشاره کردیم، انتظار داریم این موارد از دید یک کانتینر مخفی شده باشد. مشابه شناسه‌ی پردازه‌ها کرنل از مسیر proc/ID/mounts/ اطلاعات مربوط به mountهای هر پردازه را می‌خواند. بنابراین وقتی که یک پردازه با یک فضانام اختصاصی ایجاد کنیم ولی همچنان از مسیر proc/ میزبان استفاده کند، پردازه می‌تواند به اطلاعات میزبان دسترسی داشته باشد.</p><p>برای ایزوله کردن یک پردازه‌ نیاز است که ساخت یک فضانام جدید همراه با ایجاد یک فایل‌سیستم root و یک proc mount انجام شود.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --mount chroot alpine sh
+</span></span><span class=line><span class=cl>/ <span class=c1># ls</span>
+</span></span><span class=line><span class=cl>bin    dev    etc    home   lib    media  mnt    opt    proc   root   run    sbin   srv    sys    tmp    usr    var
+</span></span><span class=line><span class=cl>/ <span class=c1># mount -t proc proc proc</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># mount</span>
+</span></span><span class=line><span class=cl>proc on /proc <span class=nb>type</span> proc <span class=o>(</span>rw,relatime<span class=o>)</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># mkdir src</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># echo &amp;quotsample&amp;quot &gt; src/test.txt</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># mkdir dst</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># mount --bind src dst</span>
+</span></span><span class=line><span class=cl>/ <span class=c1># ls dst</span>
+</span></span><span class=line><span class=cl>test.txt
+</span></span><span class=line><span class=cl>/ <span class=c1># cat dst/test.txt</span>
+</span></span><span class=line><span class=cl>sample
+</span></span><span class=line><span class=cl>/ <span class=c1># mount</span>
+</span></span><span class=line><span class=cl>proc on /proc <span class=nb>type</span> proc <span class=o>(</span>rw,relatime<span class=o>)</span>
+</span></span><span class=line><span class=cl>/dev/sda1 on /dst <span class=nb>type</span> ext4 <span class=o>(</span>rw,relatime,errors<span class=o>=</span>remount-ro,data<span class=o>=</span>ordered<span class=o>)</span>
+</span></span><span class=line><span class=cl>/ <span class=c1>#</span>
+</span></span></code></pre></td></tr></table></div></div><p>به طور مشابه وقتی شما یک دایرکتوری در سیستم میزبان را در یک کانتینر mount می‌کنید (مثلاً در داکر: docker run -v path_in_host:path_in_container) ابتدا فایل‌سیستم root کانتینر در محل مناسب قرار می‌گیرد. سپس دایرکتوری مقصد در کانتینر ایجاد شده و در نهایت دایرکتوری مبدأ در مقصد bind mount می‌شود.</p><h2 id=فضانام-شبکه-network>فضانام شبکه (Network)</h2><p>یکی دیگر از سطوح ایزوله کردن، مربوط به فضای شبکه می‌باشد. فضانام شبکه به پردازه‌ها اجازه می‌دهد که دید اختصاصی نسبت به کارت شبکه و جدول مسیریابی داشته باشند.</p><p>با استفاده از دستور زیر می‌توان یک فضانام شبکه ایجاد کرد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare –net /bin/bash
+</span></span></code></pre></td></tr></table></div></div><p>با استفاده از دستور lsns و تعیین نوع net می‌توانیم جزئیات فضانام ایجاد شده را ببینیم. شناسه‌ی پردازه را به خاطر بسپارید.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:/tmp# lsns -t net
+</span></span><span class=line><span class=cl>NS TYPE NPROCS   PID USER  COMMAND
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl><span class=m>4026532516</span> net       <span class=m>2</span>  <span class=m>5268</span> root  /bin/bash
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p>به صورت پیش‌فرض وقتی که یک پردازه را در فضانام شبکه‌ی مختص به خودش قرار می‌دهیم، فقط یک کارت شبکه loopback دارد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:~# ip a
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK&gt; mtu <span class=m>65536</span> qdisc noop state DOWN group default qlen <span class=m>1000</span>
+</span></span><span class=line><span class=cl>link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span></code></pre></td></tr></table></div></div><p>برای اینکه پردازه‌ی در حال اجرا در کانتینر بتواند انتقال داده داشته باشد باید یک کارت شبکه‌ی مجازی ایجاد کنیم که مثل دو سر یک کابل شبکه عمل می‌کند. در‌ واقع فضانام شبکه‌ی اختصاصی ایجاد شده برای پردازه را به فضانام شبکه میزبان (پیش‌فرض) متصل می‌کند. برای این کار در یک ترمینال دیگر دستور زیر را وارد می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ ip link add myeth1 netns <span class=m>5268</span> <span class=nb>type</span> veth peer name myeth2 netns <span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>اگر بخواهیم دستور بالا را به زبان ساده بیان کنیم، ip link add اعلام می‌کند که می‌خواهیم یک اتصال ایجاد کنیم که در فضانام مربوط به پردازه‌ی ۵۲۶۸ یک کارت شبکه‌ی مجازی به اسم myeth1 ایجاد کند و آن را به فضانام پردازه‌ی ۱ وصل کند و نام کارت شبکه‌ی مجازی را myeth2 تنظیم کند.</p><p>حالا اگر در یک ترمینال در میزبان و همچنین در داخل فضانام جدید فهرست کارت شبکه‌ها را بررسی کنیم این دو کارت شبکه را خواهیم دید.</p><p>در داخل فضانام شبکه‌ی جدید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:/tmp# ip a
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK&gt; mtu <span class=m>65536</span> qdisc noop state DOWN group default qlen <span class=m>1000</span>
+</span></span><span class=line><span class=cl>link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+</span></span><span class=line><span class=cl>2: myveth1@if18: &lt;BROADCAST,MULTICAST&gt; mtu <span class=m>1500</span> qdisc noop state DOWN group default qlen <span class=m>1000</span> link/ether 5e:f7:93:bf:19:80 brd ff:ff:ff:ff:ff:ff link-netnsid <span class=m>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>در داخل میزبان:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ip a
+</span></span><span class=line><span class=cl>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span class=m>65536</span> qdisc noqueue state UNKNOWN group default qlen <span class=m>1000</span> link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 inet 127.0.0.1/8 scope host lo valid_lft forever preferred_lft forever inet6 ::1/128 scope host valid_lft forever preferred_lft forever 
+</span></span><span class=line><span class=cl>…
+</span></span><span class=line><span class=cl>18: myveth2@if2: &lt;BROADCAST,MULTICAST&gt; mtu <span class=m>1500</span> qdisc noop state DOWN group default qlen <span class=m>1000</span> link/ether ea:4d:95:01:8c:db brd ff:ff:ff:ff:ff:ff link-netnsid <span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>در حالت فعلی هر دو کارت شبکه‌ی جدید در وضعیت Down هستند و برای اینکه امکان انتقال داده فراهم شود باید وضعیت هر دو کارت به Up تغییر کند و به آن‌ها آدرس IP تخصیص داده شود.</p><p>در ترمینال میزبان:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo ip link <span class=nb>set</span> myveth2 up
+</span></span><span class=line><span class=cl>$ sudo ip addr add 192.168.30.100/24 dev myveth2
+</span></span><span class=line><span class=cl>$ ip a s myveth2
+</span></span><span class=line><span class=cl>18: myveth2@if2: &lt;NO-CARRIER,BROADCAST,MULTICAST,UP&gt; mtu <span class=m>1500</span> qdisc noqueue state LOWERLAYERDOWN group default qlen <span class=m>1000</span> link/ether ea:4d:95:01:8c:db brd ff:ff:ff:ff:ff:ff link-netnsid <span class=m>1</span> inet 192.168.30.100/24 scope global myveth2 valid_lft forever preferred_lft forever
+</span></span></code></pre></td></tr></table></div></div><p>در فضانام جدید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ sudo ip link <span class=nb>set</span> myveth1 up
+</span></span><span class=line><span class=cl>$ sudo ip addr add 192.168.30.101/24 dev myveth1
+</span></span><span class=line><span class=cl>$ ip a s myveth1 
+</span></span><span class=line><span class=cl>2: myveth1@if18: &lt;BROADCAST,MULTICAST&gt; mtu <span class=m>1500</span> qdisc noop state DOWN group default qlen <span class=m>1000</span> link/ether 5e:f7:93:bf:19:80 brd ff:ff:ff:ff:ff:ff link-netnsid <span class=m>0</span> inet 192.168.30.101/24 scope global myveth1valid_lft forever preferred_lft forever
+</span></span></code></pre></td></tr></table></div></div><p>همان‌طور که اشاره کردیم با ایجاد یک فضانام شبکه، جدول مسیر‌یابی و کارت شبکه‌ها ایزوله خواهد شد و پردازه‌ی موجود در کانتینر به اطلاعات میزبان دسترسی نخواهد داشت.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:/tmp# ip route 
+</span></span><span class=line><span class=cl>192.168.30.0/24 dev myveth1 proto kernel scope link src 192.168.30.101
+</span></span></code></pre></td></tr></table></div></div><p>حالا هم در ترمینال ماشین میزبان و هم در فضانام جدید می‌توانیم اتصال را تست کنیم. در ترمینال ماشین میزبان این دستور را اجرا کنید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ping 192.168.30.101
+</span></span><span class=line><span class=cl>PING 192.168.30.101 <span class=o>(</span>192.168.30.101<span class=o>)</span> 56<span class=o>(</span>84<span class=o>)</span> bytes of data.
+</span></span><span class=line><span class=cl><span class=m>64</span> bytes from 192.168.30.101: <span class=nv>icmp_seq</span><span class=o>=</span><span class=m>1</span> <span class=nv>ttl</span><span class=o>=</span><span class=m>64</span> <span class=nv>time</span><span class=o>=</span>0.043 ms
+</span></span><span class=line><span class=cl><span class=m>64</span> bytes from 192.168.30.101: <span class=nv>icmp_seq</span><span class=o>=</span><span class=m>2</span> <span class=nv>ttl</span><span class=o>=</span><span class=m>64</span> <span class=nv>time</span><span class=o>=</span>0.079 ms
+</span></span><span class=line><span class=cl>^C
+</span></span><span class=line><span class=cl>--- 192.168.30.101 ping statistics ---
+</span></span><span class=line><span class=cl><span class=m>2</span> packets transmitted, <span class=m>2</span> received, 0% packet loss, <span class=nb>time</span> 1020ms
+</span></span><span class=line><span class=cl>rtt min/avg/max/mdev <span class=o>=</span> 0.043/0.061/0.079/0.018 ms
+</span></span></code></pre></td></tr></table></div></div><p>همین‌طور در فضانام:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>root@Milad-PC:/tmp# ping 192.168.30.100
+</span></span><span class=line><span class=cl>PING 192.168.30.100 <span class=o>(</span>192.168.30.100<span class=o>)</span> 56<span class=o>(</span>84<span class=o>)</span> bytes of data.
+</span></span><span class=line><span class=cl><span class=m>64</span> bytes from 192.168.30.100: <span class=nv>icmp_seq</span><span class=o>=</span><span class=m>1</span> <span class=nv>ttl</span><span class=o>=</span><span class=m>64</span> <span class=nv>time</span><span class=o>=</span>0.078 ms
+</span></span><span class=line><span class=cl><span class=m>64</span> bytes from 192.168.30.100: <span class=nv>icmp_seq</span><span class=o>=</span><span class=m>2</span> <span class=nv>ttl</span><span class=o>=</span><span class=m>64</span> <span class=nv>time</span><span class=o>=</span>0.100 ms
+</span></span><span class=line><span class=cl>^C
+</span></span><span class=line><span class=cl>--- 192.168.30.100 ping statistics ---
+</span></span><span class=line><span class=cl><span class=m>2</span> packets transmitted, <span class=m>2</span> received, 0% packet loss, <span class=nb>time</span> 1015ms
+</span></span><span class=line><span class=cl>rtt min/avg/max/mdev <span class=o>=</span> 0.078/0.089/0.100/0.011 ms
+</span></span></code></pre></td></tr></table></div></div><p>مطابق خروجی بالا می‌بینیم که اتصال بین دو طرف برقرار شده است.</p><p>در قسمت اول با فضانام‌های uts، pid، mount و network آشنا شدیم. در قسمت <a class=link href=/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b1/>دوم</a> این نوشتار فضانام‌های user، ipc، cgroup و time را مورد بررسی قرار داده‌ایم.</p></div></section><footer class=article-footer><section class=article-tags><a href=/tags/linux/>Linux</a>
+<a href=/tags/containerization/>Containerization</a>
+<a href=/tags/devops/>Devops</a>
+<a href=/tags/security/>Security</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>مطالب مرتبط</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/><div class=article-image><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover.26279636f820901d331b807ff511672f_hu_dd2689924e1fb94e.png width=250 height=150 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲" data-key=فضانام‌ها-در-لینوکس-۲ data-hash="md5-JieWNvggkB0zG4B/9RFnLw=="></div><div class=article-details><h2 class=article-title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲</h2></div></a></article><article class=has-image><a href=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/><div class=article-image><img src=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/cover.e3bc42a094817c643c20606e05984141_hu_9e21f2f39ef510f9.png width=250 height=150 loading=lazy alt="Featured image of post پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD" data-key=پویش-امنیتی-ایمیج-با-trivy data-hash="md5-47xCoJSBfGQ8IGBuBZhBQQ=="></div><div class=article-details><h2 class=article-title>پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD</h2></div></a></article><article class=has-image><a href=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/><div class=article-image><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover.4dde7533c23d3532764156aa59e37a82_hu_ca816a6438de4522.png width=250 height=150 loading=lazy alt="Featured image of post عملیات معکوس شکارچیِ شکار شده" data-key="عملیات معکوس شکارچیِ شکار شده" data-hash="md5-Td51M8I9NTJ2QVaqWeN6gg=="></div><div class=article-details><h2 class=article-title>عملیات معکوس شکارچیِ شکار شده</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2026 Milad's blog</section><section class=powerby>قدرت گرفته از <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>قالب <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> ساخته شده توسط <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

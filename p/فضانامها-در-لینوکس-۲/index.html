@@ -1,0 +1,233 @@
+<!doctype html><html lang=fa dir=rtl><head><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><meta name=description content="بررسی فضانام\u200cهای user، ipc، cgroup و time در لینوکس و اثرشان بر ایزوله\u200cسازی پردازه\u200cها و امنیت کانتینرها."><title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲</title><link rel=canonical href=https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/><link rel=stylesheet href=/scss/style.min.833d6eed45de56f48306bf57268d5b8cdfc8a60e8e7bdc99810464fcd033f7c6.css><meta property='og:title' content="فضانام\u200cها و ایزوله کردن پردازه\u200cها در لینوکس - قسمت ۲"><meta property='og:description' content="بررسی فضانام\u200cهای user، ipc، cgroup و time در لینوکس و اثرشان بر ایزوله\u200cسازی پردازه\u200cها و امنیت کانتینرها."><meta property='og:url' content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/'><meta property='og:site_name' content="Milad's blog"><meta property='og:type' content='article'><meta property='article:section' content='Post'><meta property='article:tag' content='Linux'><meta property='article:tag' content='Containerization'><meta property='article:tag' content='Devops'><meta property='article:tag' content='Security'><meta property='article:published_time' content='2021-03-07T13:25:07+00:00'><meta property='article:modified_time' content='2021-03-07T13:25:07+00:00'><meta property='og:image' content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover.png'><meta name=twitter:title content="فضانام\u200cها و ایزوله کردن پردازه\u200cها در لینوکس - قسمت ۲"><meta name=twitter:description content="بررسی فضانام\u200cهای user، ipc، cgroup و time در لینوکس و اثرشان بر ایزوله\u200cسازی پردازه\u200cها و امنیت کانتینرها."><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content='https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover.png'><link rel="shortcut icon" href=/favicon.png></head><body class=article-page><script>(function(){const e="StackColorScheme";localStorage.getItem(e)||localStorage.setItem(e,"auto")})()</script><script>(function(){const t="StackColorScheme",e=localStorage.getItem(t),n=window.matchMedia("(prefers-color-scheme: dark)").matches===!0;e=="dark"||e==="auto"&&n?document.documentElement.dataset.scheme="dark":document.documentElement.dataset.scheme="light"})()</script><div class="container main-container flex on-phone--column extended"><aside class="sidebar left-sidebar sticky compact"><button class="hamburger hamburger--spin" type=button id=toggle-menu aria-label=منو>
+<span class=hamburger-box><span class=hamburger-inner></span></span></button><header><figure class=site-avatar><a href=/><img src=/img/avatar_hu_32fff00196f9b3ea.png width=300 height=300 class=site-logo loading=lazy alt=Avatar></a></figure><div class=site-meta><h1 class=site-name><a href=/>Milad's blog</a></h1><h2 class=site-description>تحلیل‌ها، نکته‌ها و نوشته‌های من درباره امنیت اطلاعات</h2></div></header><ol class=menu-social><li><a href=https://github.com/Miladbr target=_blank title=GitHub rel=me><svg class="icon icon-tabler icon-tabler-brand-github" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6.0 00-1.3-3.2 4.2 4.2.0 00-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3.0 00-6.2.0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2.0 00-.1 3.2A4.6 4.6.0 004 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a></li><li><a href=https://linkedin.com/in/miladbr/ target=_blank title=LinkedIn rel=me><svg class="icon icon-tabler icon-tabler-brand-linkedin" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M8 11v5"/><path d="M8 8h.01"/><path d="M16 16v-3a2 2 0 00-4 0v3"/></svg></a></li><li><a href=https://x.com/milad_bahari target=_blank title=Twitter rel=me><svg class="icon icon-tabler icon-tabler-brand-twitter" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M22 4.01c-1 .49-1.98.689-3 .99-1.121-1.265-2.783-1.335-4.38-.737S11.977 6.323 12 8v1c-3.245.083-6.135-1.395-8-4 0 0-4.182 7.433 4 11-1.872 1.247-3.739 2.088-6 2 3.308 1.803 6.913 2.423 10.034 1.517 3.58-1.04 6.522-3.723 7.651-7.742a13.84 13.84.0 00.497-3.753C20.18 7.773 21.692 5.25 22 4.009z"/></svg></a></li></ol><ol class=menu id=main-menu><li><a href=/><svg class="icon icon-tabler icon-tabler-home" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><polyline points="5 12 3 12 12 3 21 12 19 12"/><path d="M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/><path d="M9 21v-6a2 2 0 012-2h2a2 2 0 012 2v6"/></svg>
+<span>Home</span></a></li><li><a href=/archives/><svg class="icon icon-tabler icon-tabler-archive" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><rect x="3" y="4" width="18" height="4" rx="2"/><path d="M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+<span>Archives</span></a></li><li><a href=/search/><svg class="icon icon-tabler icon-tabler-search" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="10" cy="10" r="7"/><line x1="21" y1="21" x2="15" y2="15"/></svg>
+<span>Search</span></a></li><li class=menu-bottom-section><ol class=menu><li id=dark-mode-toggle><svg class="icon icon-tabler icon-tabler-toggle-left" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="8" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<svg class="icon icon-tabler icon-tabler-toggle-right" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="16" cy="12" r="2"/><rect x="2" y="6" width="20" height="12" rx="6"/></svg>
+<span>حالت شب</span></li></ol></li></ol></aside><aside class="sidebar right-sidebar sticky"><section class="widget archives"><div class=widget-icon><svg class="icon icon-tabler icon-tabler-hash" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="19" y2="15"/><line x1="11" y1="4" x2="7" y2="20"/><line x1="17" y1="4" x2="13" y2="20"/></svg></div><h2 class="widget-title section-title">فهرست</h2><div class=widget--toc><nav id=TableOfContents><ol><li><a href=#فضانام-کاربر-user>فضانام کاربر (user)</a></li><li><a href=#فضانام-ارتباط-بین-پردازهایipc>فضانام ارتباط بین پردازه‌ای(IPC)</a></li><li><a href=#فضانام-cgroup>فضانام cgroup</a></li><li><a href=#فضانام-time>فضانام time</a></li><li><a href=#جمعبندی>جمع‌بندی</a></li></ol></nav></div></section></aside><main class="main full-width"><article class="has-image main-article"><header class=article-header><div class=article-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover_hu_92cac773a793f39b.png srcset="/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover_hu_92cac773a793f39b.png 800w, /p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover_hu_6942ae0711b78d.png 1600w" width=800 height=437 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲"></a></div><div class=article-details><header class=article-category><a href=/categories/devops/ style=background-color:#0400ff;color:#fff>DevOps
+</a><a href=/categories/security/>Security</a></header><div class=article-title-wrapper><h2 class=article-title><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲</a></h2><h3 class=article-subtitle>بررسی فضانام‌های user، ipc، cgroup و time در لینوکس و اثرشان بر ایزوله‌سازی پردازه‌ها و امنیت کانتینرها.</h3></div><footer class=article-time><div><svg class="icon icon-tabler icon-tabler-calendar-time" width="56" height="56" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><path d="M11.795 21H5a2 2 0 01-2-2V7a2 2 0 012-2h12a2 2 0 012 2v4"/><circle cx="18" cy="18" r="4"/><path d="M15 3v4"/><path d="M7 3v4"/><path d="M3 11h16"/><path d="M18 16.496V18l1 1"/></svg>
+<time class=article-time--published datetime=2021-03-07T13:25:07Z>مارس 07, 2021</time></div><div><svg class="icon icon-tabler icon-tabler-clock" width="24" height="24" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path stroke="none" d="M0 0h24v24H0z"/><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+<time class=article-time--reading>مطالعه در 9 دقیقه</time></div></footer></div></header><section class=article-content><div dir=rtl><p>در این نوشتار در دو قسمت به بررسی فضانام‌ها در لینوکس و جزئیات ایزوله کردن پردازه پرداخته‌ایم. آشنایی با این جزئیات کمک می‌کند که درک درست‌تری از کانتینری کردن یک پردازه توسط تکنولوژی‌هایی مثل داکر داشته باشیم. در قسمت <a class=link href=/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b1/>اول</a> این نوشتار فضانام‌های uts، pid، mount و network را مورد بررسی قرار دادیم. در این قسمت به بررسی فضانام‌های user، ipc، cgroup و time می‌پردازیم.</p><h2 id=فضانام-کاربر-user>فضانام کاربر (user)</h2><p>این فضا‌نام به پردازه‌ها اجازه می‌دهد که User ID و Group ID جدا از میزبان داشته باشند. مهم‌ترین مزیتی که این سطح از ایزوله کردن فراهم می‌کند این است که در داخل کانتینر می‌توان کاربر یک root داشت که خارج از کانتینر یک کاربر غیر root باشد. یکی از چالش‌های امنیتی کانتینرها دور زدن مکانیزم‌های امنیتی (مثلا container escape) و دسترسی به میزبان است. از منظر امنیت این یک ویژگی کلیدی است که اجازه می‌دهد پردازه‌ی داخل کانتینر که وابسته به کاربر root است اجرا شود ولی حتی اگر به نحوی پردازه‌ بتواند از محیط ایزوله خارج شود سطح دسترسی آن در میزبان کم‌تر از کاربر root می‌باشد.</p><p>برای آزمایش این ویژگی دستورات زیر را اجرا می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ unshare --user bash
+</span></span><span class=line><span class=cl>nobody@Milad-PC:/tmp$ id
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>65534<span class=o>(</span>nobody<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>65534<span class=o>(</span>nogroup<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>65534<span class=o>(</span>nogroup<span class=o>)</span>
+</span></span><span class=line><span class=cl>nobody@Milad-PC:/tmp$ capsh --print <span class=p>|</span> grep Current
+</span></span><span class=line><span class=cl>Current: <span class=o>=</span>
+</span></span></code></pre></td></tr></table></div></div><p>همان‌طور که می‌بینیم در فضانام user که ساختیم کاربر دارای شناسه‌ی nobody است و همین‌طور هیچ capability نیز به آن تخصیص نیافته است.</p><p>برای ادامه‌ی کار به pid پردازه‌ی bash در این فضانام نیاز داریم. در اینجا باید یک نگاشت بین شناسه‌ی کاربر در داخل فضانام و داخل میزبان ایجاد کنیم. این نگاشت باید در فایل proc/<pid>/uid_map/ اعمال شود. برای اینکه بدانیم چه مقادیری وارد شود نیاز است که ساختار آن را بدانیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>nobody@Milad-PC:/tmp$ <span class=nb>echo</span> <span class=nv>$$</span>
+</span></span><span class=line><span class=cl><span class=m>27391</span>
+</span></span></code></pre></td></tr></table></div></div><p>توضیح:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ man user_namespaces
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>Each line in the uid_map file specifies a 1-to-1 mapping of a range of contiguous user IDs between two user namespaces. <span class=o>(</span>When a
+</span></span><span class=line><span class=cl>user namespace is first created, this file is empty.<span class=o>)</span> The specification in each line takes the form of three numbers delimited
+</span></span><span class=line><span class=cl>by white space. The first two numbers specify the starting user ID in each of the two user namespaces. The third number speci‐
+</span></span><span class=line><span class=cl>fies the length of the mapped range. 
+</span></span><span class=line><span class=cl>...
+</span></span></code></pre></td></tr></table></div></div><p>با توجه به توضیحات موجود در راهنمای user_namespaces در این فایل باید سه مقدار معین شود. مقدار اول مشخص کننده‌ی شناسه‌ی کاربر در فضانام ایجاد شده می‌باشد. مقدار دوم مشخص کننده‌ی شناسه‌ی کاربر در میزبان می‌باشد و سومین مقدار تعداد شناسه‌ها برای نگاشت را مشخص می‌کند. به طور خلاصه:</p><div dir=ltr><p><code>UID-inside-namespace UID-outside-namespace length</code></p></div><p>برای مثال اگر بخواهیم کاربر milad را به کاربر root در داخل فضانام بایند کنیم باید به ترتیب مقادیر 1000 (شناسه‌ی کاربر milad در میزبان)، 0 (شناسه‌ی کاربر root در فضانام) و 1 (فقط یک نگاشت می‌خواهیم انجام بدیم).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ id
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>1000<span class=o>(</span>milad<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>1000<span class=o>(</span>milad<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>1000<span class=o>(</span>milad<span class=o>)</span>,27<span class=o>(</span>sudo<span class=o>)</span>,104<span class=o>(</span>input<span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ sudo <span class=nb>echo</span> <span class=s1>&#39;0 1000 1&#39;</span> &gt; /proc/31196/uid_map
+</span></span></code></pre></td></tr></table></div></div><p>مشابه همین نگاشت برای شناسه‌ی گروه (gid) نیز انجام می‌شود.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo <span class=nb>echo</span> <span class=s1>&#39;0 1000 1&#39;</span> &gt; /proc/27391/gid_map
+</span></span></code></pre></td></tr></table></div></div><p>سپس مجددا در ترمینال ایجاد شده در فضانام دستور id را اجرا می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>nobody@Milad-PC:/tmp$ id
+</span></span><span class=line><span class=cl><span class=nv>uid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>gid</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span> <span class=nv>groups</span><span class=o>=</span>0<span class=o>(</span>root<span class=o>)</span>,65534<span class=o>(</span>nogroup<span class=o>)</span>
+</span></span><span class=line><span class=cl>nobody@Milad-PC:/tmp$ cat /proc/self/uid_map
+</span></span><span class=line><span class=cl><span class=m>0</span>       <span class=m>1000</span>          <span class=m>1</span>
+</span></span><span class=line><span class=cl>nobody@Milad-PC:/tmp$ cat /proc/self/gid_map
+</span></span><span class=line><span class=cl><span class=m>0</span>       <span class=m>1000</span>          <span class=m>1</span>
+</span></span><span class=line><span class=cl>nobody@Milad-PC:/tmp$ capsh --print <span class=p>|</span> grep Current
+</span></span><span class=line><span class=cl>Current: <span class=o>=</span> cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read+ep
+</span></span></code></pre></td></tr></table></div></div><p>با توجه به خروجی بالا مشاهده می‌شود که کاربر در داخل فضانام root است و به capabilityها دسترسی دارد و در خارج از فضانام همان ‌کاربر milad با شناسه کاربری 1000 می‌باشد.</p><h2 id=فضانام-ارتباط-بین-پردازهایipc>فضانام ارتباط بین پردازه‌ای(IPC)</h2><p>در سیستم‌عامل لینوکس دو پردازه‌ می‌توانند از طریق حافظه‌ی مشترک یا صف پیام مشترک ([mq_open]https://man7.org/linux/man-pages/man3/mq_open.3.html)) با یکدیگر پیام تبادل کنند. برای اینکار این دو پردازه باید عضو یک فضا‌نام IPC یکسان باشند. از طرفی به طور پیش‌فرض ما انتظار داریم که پردازه‌های موجود در کانتینرهای مختلف نتوانند به حافظه‌ی مشترک یکدیگر دسترسی داشته باشند برای همین برای آن‌ها فضانام‌های IPC مجزا ایجاد می‌کنیم.</p><p>برای نمونه می‌بینیم که به صورت پیش‌فرض کانتینرها در داکر دارای فضانام ipc اختصاصی هستند:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ docker ps --quiet --all <span class=p>|</span> xargs docker inspect --format <span class=s1>&#39;{{ .Id }}: IpcMode={{ .HostConfig.IpcMode }}&#39;</span>                        
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>037ad3a550a7de78ac9a929159b627e765cf753a314f9f4c7f564127b7ac9ccb: <span class=nv>IpcMode</span><span class=o>=</span>private
+</span></span><span class=line><span class=cl>8676c058096d7337cd497457da25a596f2cc6f317b01d033b2c53329fc6e2619: <span class=nv>IpcMode</span><span class=o>=</span>private
+</span></span><span class=line><span class=cl>d1704e1cb4f280d5e5afeabb8064526fc09f297183006086354fe443c5359b42: <span class=nv>IpcMode</span><span class=o>=</span>private
+</span></span></code></pre></td></tr></table></div></div><p>برای آزمایش فضانام ipc ابتدا یک حافظه‌ی مشترک ایجاد می‌کنیم سپس با دستور ipcs فهرست ipcهای موجود را بررسی می‌کنیم:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ipcmk -M <span class=m>1000</span>
+</span></span><span class=line><span class=cl>Shared memory id: <span class=m>2044428296</span>
+</span></span><span class=line><span class=cl>$ ipcs
+</span></span><span class=line><span class=cl>------ Message Queues --------
+</span></span><span class=line><span class=cl>key        msqid      owner      perms      used-bytes   messages    
+</span></span><span class=line><span class=cl>------ Shared Memory Segments --------
+</span></span><span class=line><span class=cl>key        shmid      owner      perms      bytes      nattch     status      
+</span></span><span class=line><span class=cl>0x00000000 <span class=m>2033451008</span> milad      <span class=m>600</span>        <span class=m>524288</span>     <span class=m>2</span>          dest 
+</span></span><span class=line><span class=cl>...      
+</span></span><span class=line><span class=cl>0xaac7b1b4 <span class=m>2044428296</span> milad      <span class=m>644</span>        <span class=m>1000</span>       <span class=m>0</span>                       
+</span></span><span class=line><span class=cl>...
+</span></span><span class=line><span class=cl>0x00000000 <span class=m>849346606</span>  milad      <span class=m>600</span>        <span class=m>524288</span>     <span class=m>2</span>          dest         
+</span></span><span class=line><span class=cl>------ Semaphore Arrays --------
+</span></span><span class=line><span class=cl>key        semid      owner      perms      nsems     
+</span></span><span class=line><span class=cl>0xe93c17d9 <span class=m>131072</span>     milad      <span class=m>666</span>        <span class=m>1</span>         
+</span></span><span class=line><span class=cl>0xcdbd64db <span class=m>163841</span>     milad      <span class=m>600</span>        <span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>سپس با استفاده از unshare یک فضانام ipc ایجاد می‌کنیم و با دستور ipcs فهرست ipcها را بررسی می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --ipc /bin/bash                                                                                          root@Milad-PC:~# ipcs
+</span></span><span class=line><span class=cl>------ Message Queues --------
+</span></span><span class=line><span class=cl>key        msqid      owner      perms      used-bytes   messages    
+</span></span><span class=line><span class=cl>------ Shared Memory Segments --------
+</span></span><span class=line><span class=cl>key        shmid      owner      perms      bytes      nattch     status      
+</span></span><span class=line><span class=cl>------ Semaphore Arrays --------
+</span></span><span class=line><span class=cl>key        semid      owner      perms      nsems
+</span></span></code></pre></td></tr></table></div></div><p>همان‌طور که مشاهده می‌کنیم پردازه‌ی موجود در داخل فضانام جدید به فهرست ipcهای موجود در میزبان دسترسی ندارد.</p><h2 id=فضانام-cgroup>فضانام cgroup</h2><p>در سیستم‌عامل منابعی مانند پردازنده (CPU)، حافظه‌ی اصلی (RAM)، پهنای‌باند شبکه و &mldr; به صورت مشترک بین پردازه‌ها استفاده می‌شود. در این شرایط یک پردازه می‌تواند به صورت ناعادلانه بخش زیادی از این منابع را تصرف نماید. برای محدود کردن میزان مصرف این منابع توسط پردازه‌ها در سیستم‌عامل لینوکس قابلیتی به نام control groups یا به اختصار cgroups وجود دارد. با بهره‌برداری از cgroups مدیر سیستم می‌تواند به صورت دقیق و بهینه بر روی تخصیص و محدود کردن (Resource limiting)، اولویت‌بندی (Prioritization)، مدیریت (Control) و حسابرسی (Accounting) منابع (زیر سیستم‌ها) کنترل داشته باشد.</p><p>تنظیمات cgroupها در قالب یک فایل سیستم مجازی و به صورت سلسله مراتبی نگه‌داری می‌شود. این ساختار مشابه اطلاع پردازه‌ها در مسیر proc/ می‌باشد. در این ساختار سلسله‌ مراتبی می‌توان cgroup‌های متعددی تعریف کرد که هر کدام از آن‌ها می‌تواند اطلاعاتی را از پدرش به ارث ببرد. همین‌طور هر کدام از cgroupها می‌تواند برای محدود کردن یک یا چند منابع (RAM, CPU, &mldr;) تعریف شده باشند.</p><p><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups.jpeg width=1000 height=651 srcset="/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups_hu_62f37eab3b9c69f7.jpeg 480w, /p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups_hu_d45579a107e31162.jpeg 1024w" loading=lazy alt=" منبع: https://twitter.com/b0rk/status/1214341831049252870" class=gallery-image data-flex-grow=153 data-flex-basis=368px></p><p>در لینوکس ۱۲ نوع کنترلر (زیرسیستم) برای cgroup وجود دارد که جزئیات دقیق آن‌ها را می‌توانید در <a class=link href=https://man7.org/linux/man-pages/man7/cgroups.7.html target=_blank rel=noopener>اینجا</a> مطالعه کنید. با استفاده از دستور زیر می‌توانید فهرست آن‌ها را مشاهده کنید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ cat /proc/cgroups                                                                                                            <span class=c1>#subsys_name	hierarchy	num_cgroups	enabled</span>
+</span></span><span class=line><span class=cl>cpuset	9	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>cpu	10	94	<span class=m>1</span>
+</span></span><span class=line><span class=cl>cpuacct	10	94	<span class=m>1</span>
+</span></span><span class=line><span class=cl>blkio	3	94	<span class=m>1</span>
+</span></span><span class=line><span class=cl>memory	4	132	<span class=m>1</span>
+</span></span><span class=line><span class=cl>devices	12	95	<span class=m>1</span>
+</span></span><span class=line><span class=cl>freezer	5	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>net_cls	8	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>perf_event	7	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>net_prio	8	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>hugetlb	11	2	<span class=m>1</span>
+</span></span><span class=line><span class=cl>pids	2	102	<span class=m>1</span>
+</span></span><span class=line><span class=cl>rdma	6	1	<span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>وقتی شما از یک تکنولوژی کانتینری استفاده می‌کنید به صورت خودکار عملیات لازم و مرتبط با تنظیمات شما اجرا خواهد شد. برای مثال در داکر با استفاده از دستور زیر یک کانتینر ایجاد کنید:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ docker run -d --cpus<span class=o>=</span><span class=p>&amp;</span>quot1.0<span class=p>&amp;</span>quot --memory<span class=o>=</span><span class=p>&amp;</span>quot1g<span class=p>&amp;</span>quot hub.hamdocker.ir/library/alpine sleep <span class=m>6000</span>                                           bdd23fa5e49a88476f711a75e55a4ad5bd0d52fb3469a4c9d75b3f1e40a84cd1
+</span></span></code></pre></td></tr></table></div></div><p>سپس با استفاده از شناسه‌ی (ID) کانتینر ایجاد شده در داخل مسیر مربوط به cgroupها در داخل سیستم میزبان شناسه‌ی پردازه‌‌های مربوط به این cgroup را مشاهده می‌کنیم. مقدار pid درج شده در این فایل مربوط به پردازه‌ی sleep اجرا شده در داخل کانتینر است.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ cat /sys/fs/cgroup/devices/docker/bdd23fa5e49a88476f711a75e55a4ad5bd0d52fb3469a4c9d75b3f1e40a84cd1/tasks
+</span></span><span class=line><span class=cl><span class=m>29881</span>
+</span></span></code></pre></td></tr></table></div></div><p>با بررسی پردازه‌ها از طریق سیستم میزبان صحت این موضوع را بررسی می‌کنیم.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ps -eaf <span class=p>|</span> grep <span class=m>29881</span>                                                                                                       
+</span></span><span class=line><span class=cl>root     <span class=m>29881</span> <span class=m>29849</span>  <span class=m>0</span> 02:07 ?        00:00:00 sleep <span class=m>6000</span>
+</span></span><span class=line><span class=cl>milad    <span class=m>29954</span>  <span class=m>7914</span>  <span class=m>0</span> 02:08 pts/1    00:00:00 grep --color<span class=o>=</span>auto --exclude-dir<span class=o>=</span>.bzr --exclude-dir<span class=o>=</span>CVS --exclude-dir<span class=o>=</span>.git --exclude-dir<span class=o>=</span>.hg --exclude-dir<span class=o>=</span>.svn <span class=m>29881</span>
+</span></span></code></pre></td></tr></table></div></div><p>فضانام cgroup برای جلوگیری از دسترسی پردازه‌ها به تنظیمات cgroup یکدیگر می‌باشد. هر پردازه در فضانام cgroup مسیر ریشه‌ی مختص به خود را خواهد داشت. این جداسازی هم از منظر امنیت جهت جلوگیری از نشت اطلاعات میزبان و هم از منظر صحت عملکرد به دلیل وجود قابلیت ارث‌بری و عدم تصادم نام‌ها مهم است.</p><p>برای بررسی قابلیت فضانام cgroup، یک فضانام از این نوع ایجاد می‌کنیم سپس محتویات فایل /proc/self/cgroup را در داخل فضانام و داخل ماشین میزبان بررسی می‌کنیم.</p><p>در داخل میزبان:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ cat /proc/self/cgroup                                                                                                   
+</span></span><span class=line><span class=cl>12:devices:/user.slice
+</span></span><span class=line><span class=cl>11:hugetlb:/
+</span></span><span class=line><span class=cl>10:cpu,cpuacct:/user.slice
+</span></span><span class=line><span class=cl>9:cpuset:/
+</span></span><span class=line><span class=cl>8:net_cls,net_prio:/
+</span></span><span class=line><span class=cl>7:perf_event:/
+</span></span><span class=line><span class=cl>6:rdma:/
+</span></span><span class=line><span class=cl>5:freezer:/
+</span></span><span class=line><span class=cl>4:memory:/user.slice
+</span></span><span class=line><span class=cl>3:blkio:/user.slice
+</span></span><span class=line><span class=cl>2:pids:/user.slice/user-1000.slice/session-2.scope
+</span></span><span class=line><span class=cl>1:name<span class=o>=</span>systemd:/user.slice/user-1000.slice/session-2.scope0::/user.slice/user-1000.slice/session-2.scope
+</span></span></code></pre></td></tr></table></div></div><p>در داخل فضانام:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo unshare --cgroup /bin/bash                                                                                              root@Milad-PC:/proc/7914# cat /proc/self/cgroup
+</span></span><span class=line><span class=cl>12:devices:/
+</span></span><span class=line><span class=cl>11:hugetlb:/
+</span></span><span class=line><span class=cl>10:cpu,cpuacct:/
+</span></span><span class=line><span class=cl>9:cpuset:/
+</span></span><span class=line><span class=cl>8:net_cls,net_prio:/
+</span></span><span class=line><span class=cl>7:perf_event:/
+</span></span><span class=line><span class=cl>6:rdma:/
+</span></span><span class=line><span class=cl>5:freezer:/
+</span></span><span class=line><span class=cl>4:memory:/
+</span></span><span class=line><span class=cl>3:blkio:/
+</span></span><span class=line><span class=cl>2:pids:/
+</span></span><span class=line><span class=cl>1:name<span class=o>=</span>systemd:/
+</span></span><span class=line><span class=cl>0::/
+</span></span></code></pre></td></tr></table></div></div><p>همان‌طور که مشاهده می‌کنیم محتویات این دو فایل متفاوت است.</p><h2 id=فضانام-time>فضانام time</h2><p>یکی دیگر از فضانام‌ها در لینوکس که اخیرا در کرنل نسخه‌ی ۵.۶ اضافه شده است فضانام زمان یا time است. با استفاده از این فضانام پردازه‌ها می‌توانند مقادیر دلخواهی برای CLOCK_MONOTONIC و CLOCK_BOOTTIME داشته باشد. بنابراین زمان جاری و مقدار uptime میزبان می‌تواند با پردازه‌ی داخل این فضانام متفاوت باشد. داکر و تکنولوژی‌های مشابه آن فعلا از این ویژگی در زمان ایجاد کانتینر استفاده نمی‌کنند.</p><p>برای مثال با استفاده از دستور زیر می‌توانید یک کانتینر ایجاد کنید و مقدار uptime را در داخل کانیتنر و میزبان مقایسه کنید.</p><p>در داخل کانتینر:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ docker run --rm -it hub.hamdocker.ir/library/alpine sh                                                                        
+</span></span><span class=line><span class=cl>/ <span class=c1># uptime</span>
+</span></span><span class=line><span class=cl> 23:03:49 up <span class=m>1</span> day, 13:16,  load average: 1.11, 0.74, 0.63
+</span></span></code></pre></td></tr></table></div></div><p>در داخل میزبان:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ uptime                                                                                                                       
+</span></span><span class=line><span class=cl>02:34:01 up <span class=m>1</span> day, 13:17,  <span class=m>4</span> users,  load average: 1.02, 0.74, 0.64
+</span></span></code></pre></td></tr></table></div></div><p>این تفاوت ساعت در داخل کانتینر و میزبان به علت تفاوت timezone می‌باشد.</p><h2 id=جمعبندی>جمع‌بندی</h2><p>بعد از آشنایی با فضانام‌ها در لینوکس و cgroups حالا درک درست‌تری از کانتینر‌ها یا کانتینری کردن یک پردازه داریم. الان می‌دانیم که در داخل یک کانتینر یک پردازه‌ در حال اجرا است که توسط فضانام‌ها ایزوله شده و آستانه‌ی مصرف منابع آن‌ها توسط قابلیت cgroups محدود شده است. تصویر زیر به خوبی نحوه‌ی عملکرد این ویژگی‌ها را نمایش می‌دهد.</p><p><img src=/linunx-ns-2.png loading=lazy alt="منبع: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html/overview_of_containers_in_red_hat_systems/introduction_to_linux_containers"></p><p>البته باید توجه داشت که همه‌ی این پردازه‌های کانتینری شده بر روی یک کرنل مشترک اجرا می‌شوند و مفهوم ایزوله شدن نبست به اجرا در یک ماشین مجازی (virtual machine) به معنای واقعی اینجا رعایت نمی‌شود که می‌تواند از منظر امنیت مخاطراتی داشته باشد. برای مثال یک آسیب‌پذیری یا تنظیمات غیر امن می‌تواند منجر به خارج شدن از داخل کانتینر شود و در نتیجه دسترسی به تمامی کانتینرها فراهم شود. در نوشتارهای آتی به بررسی این نوع حملات می‌پردازیم.</p></div></section><footer class=article-footer><section class=article-tags><a href=/tags/linux/>Linux</a>
+<a href=/tags/containerization/>Containerization</a>
+<a href=/tags/devops/>Devops</a>
+<a href=/tags/security/>Security</a></section></footer></article><aside class=related-content--wrapper><h2 class=section-title>مطالب مرتبط</h2><div class=related-content><div class="flex article-list--tile"><article class=has-image><a href=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/><div class=article-image><img src=/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover.3de2fccd625cadffc430892658a1bc62_hu_28bff0548f46057b.png width=250 height=150 loading=lazy alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول" data-key=فضانام‌ها-در-لینوکس-۱ data-hash="md5-PeL8zWJcrf/EMIkmWKG8Yg=="></div><div class=article-details><h2 class=article-title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول</h2></div></a></article><article class=has-image><a href=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/><div class=article-image><img src=/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/cover.e3bc42a094817c643c20606e05984141_hu_9e21f2f39ef510f9.png width=250 height=150 loading=lazy alt="Featured image of post پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD" data-key=پویش-امنیتی-ایمیج-با-trivy data-hash="md5-47xCoJSBfGQ8IGBuBZhBQQ=="></div><div class=article-details><h2 class=article-title>پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD</h2></div></a></article><article class=has-image><a href=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/><div class=article-image><img src=/p/%D8%B9%D9%85%D9%84%DB%8C%D8%A7%D8%AA-%D9%85%D8%B9%DA%A9%D9%88%D8%B3-%D8%B4%DA%A9%D8%A7%D8%B1%DA%86%DB%8C%D9%90-%D8%B4%DA%A9%D8%A7%D8%B1-%D8%B4%D8%AF%D9%87/cover.4dde7533c23d3532764156aa59e37a82_hu_ca816a6438de4522.png width=250 height=150 loading=lazy alt="Featured image of post عملیات معکوس شکارچیِ شکار شده" data-key="عملیات معکوس شکارچیِ شکار شده" data-hash="md5-Td51M8I9NTJ2QVaqWeN6gg=="></div><div class=article-details><h2 class=article-title>عملیات معکوس شکارچیِ شکار شده</h2></div></a></article></div></div></aside><footer class=site-footer><section class=copyright>&copy;
+2026 Milad's blog</section><section class=powerby>قدرت گرفته از <a href=https://gohugo.io/ target=_blank rel=noopener>Hugo</a><br>قالب <b><a href=https://github.com/CaiJimmy/hugo-theme-stack target=_blank rel=noopener data-version=3.33.0>Stack</a></b> ساخته شده توسط <a href=https://jimmycai.com target=_blank rel=noopener>Jimmy</a></section></footer><div class=pswp tabindex=-1 role=dialog aria-hidden=true><div class=pswp__bg></div><div class=pswp__scroll-wrap><div class=pswp__container><div class=pswp__item></div><div class=pswp__item></div><div class=pswp__item></div></div><div class="pswp__ui pswp__ui--hidden"><div class=pswp__top-bar><div class=pswp__counter></div><button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+<button class="pswp__button pswp__button--share" title=Share></button>
+<button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+<button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button><div class=pswp__preloader><div class=pswp__preloader__icn><div class=pswp__preloader__cut><div class=pswp__preloader__donut></div></div></div></div></div><div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap"><div class=pswp__share-tooltip></div></div><button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+</button>
+<button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)"></button><div class=pswp__caption><div class=pswp__caption__center></div></div></div></div></div><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.js integrity="sha256-ePwmChbbvXbsO02lbM3HoHbSHTHFAeChekF1xKJdleo=" crossorigin=anonymous defer></script><script src=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe-ui-default.min.js integrity="sha256-UKkzOn/w1mBxRmLLGrSeyB4e1xbrp4xylgAWb3M42pU=" crossorigin=anonymous defer></script><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/default-skin/default-skin.min.css crossorigin=anonymous><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/photoswipe@4.1.3/dist/photoswipe.min.css crossorigin=anonymous></main></div><script src=https://cdn.jsdelivr.net/npm/node-vibrant@3.1.6/dist/vibrant.min.js integrity="sha256-awcR2jno4kI5X0zL8ex0vi2z+KMkF24hUW8WePSA9HM=" crossorigin=anonymous></script><script type=text/javascript src=/ts/main.c922af694cc257bf1ecc41c0dd7b0430f9114ec280ccf67cd2c6ad55f5316c4e.js defer></script><script>(function(){const e=document.createElement("link");e.href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap",e.type="text/css",e.rel="stylesheet",document.head.appendChild(e)})()</script></body></html>

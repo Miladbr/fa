@@ -1,0 +1,1441 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Devops on Milad's blog</title><link>https://fa.miladbr.uk/tags/devops/</link><description>Recent content in Devops on Milad's blog</description><generator>Hugo -- gohugo.io</generator><language>fa</language><lastBuildDate>Mon, 20 Dec 2021 16:50:24 +0000</lastBuildDate><atom:link href="https://fa.miladbr.uk/tags/devops/index.xml" rel="self" type="application/rss+xml"/><item><title>پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD</title><link>https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/</link><pubDate>Mon, 20 Dec 2021 16:50:24 +0000</pubDate><guid>https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/</guid><description>&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/cover.png" alt="Featured image of post پویش امنیتی برنامه‌های کانتینری شده در چرخه‌ی CI/CD" /&gt;&lt;div dir="rtl"&gt;
+&lt;h2 id="مقدمه"&gt;مقدمه
+&lt;/h2&gt;&lt;p&gt;در روزهای گذشته آسیب‌پذیری‌ &lt;strong&gt;Log4Shell&lt;/strong&gt; (CVE-2021-44228, CVE-2021-45046) در صدر اخبار حوزه‌ی امنیت فناوری اطلاعات بوده است. بسیاری از شرکت‌ها برای شناسایی و رفع این آسیب‌پذیری دچار چالش شده بودند. برای شناسایی این آسیب‌پذیری ابزار‌ها و یک‌خطی‌های (&lt;em&gt;one-liners&lt;/em&gt;) مختلفی در دسترس بوده است. ما در هم‌روش برای شناسایی و کمک به مشتریانی که آسیب‌پذیر بوده‌اند از ابزار &lt;strong&gt;Trivy&lt;/strong&gt; استفاده کردیم. در کلاستر‌های هم‌روش به صورت مداوم در بازه‌های زمانی معین کانتینر‌های در حال اجرا توسط Trivy پویش می‌شوند. در این مورد خاص به علت اهمیت این موضوع نتایج آسیب‌پذیری در اختیار مشتریان قرار گرفت. مزایای استفاده از Trivy به جای راه‌کارهای سنتی در بستر &lt;strong&gt;کوبرنتیز&lt;/strong&gt; ما را ترغیب کرد که در یک نوشتار به معرفی Trivy و نحوه‌ی استفاده از آن در چرخه‌ی &lt;strong&gt;CI/CD&lt;/strong&gt; در گیت‌لب بپردازیم.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme.jpeg"
+width="725"
+height="500"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme_hu_134f43a289c30b1a.jpeg 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/meme_hu_be893df03329931d.jpeg 1024w"
+loading="lazy"
+class="gallery-image"
+data-flex-grow="145"
+data-flex-basis="348px"
+&gt;&lt;/p&gt;
+&lt;h2 id="اهمیت-اسکن-کردن-ایمیجها-در-devsecops"&gt;اهمیت اسکن کردن ایمیج‌ها در DevSecOps
+&lt;/h2&gt;&lt;p&gt;یکی از گام‌های ساده در عین حال بسیار اثرگذار در بحث امن‌سازی سیستم‌ها، پویش (&lt;em&gt;scan&lt;/em&gt;) آسیب‌پذیری‌های شناخته‌شده (&lt;em&gt;&lt;a class="link" href="https://owasp.org/Top10/A06_2021-Vulnerable_and_Outdated_Components/" target="_blank" rel="noopener"
+&gt;known vulnerabilities&lt;/a&gt;&lt;/em&gt;) می‌باشد. بسیاری از اپ‌های کانتینری‌شده ممکن است بر پایه‌ی یک ایمیج قدیمی ایجاد شده باشند یا همچنین ممکن است در توسعه‌ی آنها از کتابخانه‌هایی استفاده شده باشد که دارای آسیب‌پذیری شناخته‌شده باشد.&lt;/p&gt;
+&lt;p&gt;در یک برنامه‌ی کانتینری شده یک آسیب‌پذیری در سطح سیستم‌عامل می‌تواند امنیت کل برنامه را زیر سؤال ببرد. همچنین یکی از مواردی که اغلب توسط برنامه‌نویس‌ها نادیده گرفته می‌شود پویش آسیب‌پذیری کتابخانه‌های ثالث است که در توسعه‌ی برنامه مورد استفاده قرار می‌گیرد. به همین دلیل لازم است قبل از برپاسازی یک برنامه در محیط عملیاتی از جنبه‌ی امنیت و همچنین انطباق با سیاست‌های خاص (مثلاً برنامه‌های حوزه‌ی پرداخت‌ یا پزشکی) مورد پویش قرار بگیرد.&lt;/p&gt;
+&lt;p&gt;در این شرایط با پویش پیوسته برنامه‌ها در زمان ساخت آن‌ها، در چرخه‌ی CI/CD، می‌توان در فاز ساخت ایمیج کانتینر بخشی از آسیب‌پذیری‌ها را شناسایی کرد و از انتشار نسخه‌ی ناامن و برپاسازی آن در محیط عملیاتی جلوگیری کرد. در این نوشتار برای پویش امنیتی ایمیج‌ها به معرفی ابزار Trivy و نحوه‌ی استفاده‌ی آن در چرخه‌ی CI/CD در GitLab می‌پردازیم.&lt;/p&gt;
+&lt;h2 id="معرفی-trivy"&gt;معرفی Trivy
+&lt;/h2&gt;&lt;p&gt;&lt;strong&gt;&lt;a class="link" href="https://github.com/aquasecurity/trivy" target="_blank" rel="noopener"
+&gt;Trivy&lt;/a&gt;&lt;/strong&gt; یک ابزار متن‌باز است که در ابتدا به عنوان یک پروژه‌ی شخصی برای رفع نیازمندی پویش امنیتی ایمیج کانتینرها در بستر کوبرنتیز توسعه داده شد. پس از انتشار نسخه‌های اولیه در کامیونیتی‌های متن‌باز به صورت گسترده مورد استقبال قرار گرفت. انتشار Trivy به صورت یک فایل باینری مستقل که وابستگی به هیچ پایگاه داده، کتابخانه و یا سیستم‌عامل خاصی ندارد باعث شده که استقرار و به‌کارگیری آن بسیار ساده و مطلوب شود.&lt;/p&gt;
+&lt;p&gt;Trivy توانایی شناسایی آسیب‌پذیری در سطح &lt;strong&gt;ایمیج برنامه‌های کانتینری‌شده&lt;/strong&gt;، &lt;strong&gt;فایل‌سیستم&lt;/strong&gt;، &lt;strong&gt;مخزن مبتنی بر Git&lt;/strong&gt; و همچنین &lt;strong&gt;فایل‌های تنظیمات (Configuration)&lt;/strong&gt; را داراست. به طور دقیق‌تر با استفاده از Trivy می‌توان آسیب‌پذیری‌هایی را که در سطح بسته‌های (&lt;em&gt;Package&lt;/em&gt;) سیستم‌عامل یا کتابخانه‌های یک زبان برنامه‌نویسی وجود دارد شناسایی کرد.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://trivy.dev/v0.17.2/imgs/overview.png"
+loading="lazy"
+alt="ساختار Trivy"
+&gt;&lt;/p&gt;
+&lt;p&gt;پویشگر‌های امنیتی برای شناسایی آسیب‌پذیری‌ها نیاز دارند که نسخه‌ی بسته‌ها و کتابخانه‌های نصب‌شده را شناسایی کنند. سپس با استفاده از فهرستی از آسیب‌پذیری‌هایی که در اختیار دارند (مثلاً دیتابیس &lt;strong&gt;&lt;a class="link" href="https://nvd.nist.gov/vuln" target="_blank" rel="noopener"
+&gt;NVD&lt;/a&gt;&lt;/strong&gt;, &lt;strong&gt;&lt;a class="link" href="https://access.redhat.com/security/security-updates/cve" target="_blank" rel="noopener"
+&gt;Red Hat&lt;/a&gt;&lt;/strong&gt;) بسته‌ها و کتابخانه‌های آسیب‌پذیر را شناسایی و گزارش می‌کنند. برای مثال برای استخراج فهرست بسته‌های موجود در سیستم‌عامل‌ها می‌توانند از مسیرهای &lt;code&gt;/var/lib/dpkg/&lt;/code&gt; یا &lt;code&gt;/lib/apk/db/&lt;/code&gt; اطلاعات لازم را به‌دست بیاورند. در تصویر زیر یک نمونه از محتویات فایل &lt;code&gt;/var/lib/dpkg/status&lt;/code&gt; نمایش داده شده است.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;grep Package -A9 /var/lib/dpkg/status
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1.webp"
+width="858"
+height="599"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1_hu_70dc6c617755bd87.webp 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/trivy1_hu_825688787e5980e3.webp 1024w"
+loading="lazy"
+alt="پکیج‌های نصب شده در سیستم"
+class="gallery-image"
+data-flex-grow="143"
+data-flex-basis="343px"
+&gt;&lt;/p&gt;
+&lt;p&gt;اگر ایمیج یک کانتینر به جهت کاهش حجم ایمیج strip شده باشد و اطلاعاتی نظیر اطلاعات فوق از آن حذف شده باشد احتمالا Trivy و سایر پویشگر‌های مشابه در این فاز &lt;a class="link" href="" &gt;نمی‌توانند به درستی عمل کنند&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;برای استخراج فهرست کتابخانه‌های استفاده شده نیز Trivy از فایل‌های معینی استفاده می‌کند. فهرست این فایل‌ها بر اساس زبان‌های برنامه‌نویسی در این لینک آورده شده است. برای مثال در پایتون فایل‌های Pipfile.lock, poetry.lock و requirements.txt در زمان پویش مخزن یا فایل‌سیستم مورد استفاده قرار می‌گیرد.&lt;/p&gt;
+&lt;p&gt;برای پویش امنیتی ایمیج کانتینر‌ها ابزارهای جایگزین دیگری نظیر &lt;a class="link" href="https://github.com/quay/clair" target="_blank" rel="noopener"
+&gt;Clair&lt;/a&gt;, &lt;a class="link" href="https://github.com/anchore" target="_blank" rel="noopener"
+&gt;Anchore&lt;/a&gt; وجود دارد. در
+مقایسه‌هایی بین این ابزارها صورت گرفته است. غیر از ویژگی‌هایی که در صفحه‌ی معرفی پروژه در گیت‌هاب درج شده است، بر اساس تجربه‌ی ما ویژگی‌های زیر در Trivy قابل توجه است.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;- ساده بودن استقرار و بکارگیری&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;- سرعت بالا در اجرای پویش&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;- صحت عملکرد و میزان False/Positive کمتر نسبت به ابزارهای مشابه&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;- انطباق با فرآیند CI/CD&lt;/strong&gt;&lt;/p&gt;
+&lt;h2 id="بررسی-قابلیتهای-مهم-trivy"&gt;بررسی قابلیت‌های مهم Trivy
+&lt;/h2&gt;&lt;p&gt;در این قسمت قابلیت‌های مهم Trivy نظیر پویش ایمیج کانتینر، پویش فایل سیستم و پویش تنظیمات ناامن در مانیفیست‌ها را با مثال‌ مرور می‌کنیم. شما هم می‌توانید با نصب کردن Trivy از طریق دستور زیر مثال‌های که در بخش بعدی آورده شده است را امتحان کنید. با اجرای دستور زیر نسخه‌ی ۰.۲۱.۲ بر روی سیستم‌عامل شما نصب خواهد شد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh &lt;span class="p"&gt;|&lt;/span&gt; sh -s -- -b /usr/local/bin v0.21.2
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h3 id="پویش-ایمیج-کانتینر"&gt;پویش ایمیج کانتینر
+&lt;/h3&gt;&lt;p&gt;همان‌طور که اشاره کردیم Trivy یک ابزار برای پویش آسیب‌پذیری‌های شناخته شده در ایمیج کانتینرها می‌باشد. برای پویش یک ایمیج می‌توانیم از دستور زیر استفاده کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 &lt;span class="p"&gt;|&lt;/span&gt; jq &lt;span class="s2"&gt;&amp;#34;.Results[].Vulnerabilities[].VulnerabilityID&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;CVE-2021-33574&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;CVE-2021-35942&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;CVE-2020-1751&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="s2"&gt;&amp;#34;quotCVE-2020-1752&amp;#34;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در مثال بالا فهرست آسیب‌پذیری‌های شناخته شده ایمیج httpd نسخه‌ی ۲.۴.۴۳ استخراج شده است. در زمان اجرا می‌توان از سوییچ‌های زیر برای فیلتر کردن پویش استفاده کرد.&lt;/p&gt;
+&lt;h3 id="فیلتر-کردن-آسیبپذیریها"&gt;فیلتر کردن آسیب‌پذیری‌ها
+&lt;/h3&gt;&lt;p&gt;استفاده از ignore-unfixed برای نادیده گرفتن آسیب‌پذیری‌هایی که فاقد وصله هستند و تاکنون رفع نشده اند.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --ignore-unfixed
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;فیلتر کردن آسیب‌پذیری‌ها بر اساس شدت با استفاده از severity.
+مثلا:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --severity HIGH,CRITICAL --ignore-unfixed
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;مشخص کردن یک فهرست برای نادیده گرفتن آسیب‌پذیری‌های خاص در زمان پویش
+.
+برای اینکار باید در یک فایل به نام .trivyignore شناسه‌ی آسیب‌پذیری‌ها را وارد کنیم. مثلا:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ cat .trivyignore
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CVE-2021-33574
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;CVE-2021-35942
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;و سپس&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy image hub.hamdocker.ir/library/httpd:2.4.43
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در مثال بالا در زمان پویش، آسیب‌پذیری‌های CVE-2021-33574 و CVE-2021-35942 نادیده گرفته می‌شود. همچنین با استفاده از OPA می‌توانید فیلتر کردن آسیب‌پذیری‌ها را انجام دهد یا بر عکس مثال بالا، تعیین کنید که فقط یک آسیب‌پذیری خاص مثل log4shell در ایمیج‌ها بررسی شود.&lt;/p&gt;
+&lt;h3 id="اختصاصی-کردن-فرمت-خروجی"&gt;اختصاصی کردن فرمت خروجی
+&lt;/h3&gt;&lt;p&gt;فیلتر کردن نمایش و ذخیره کردن خروجی در یک فایل با استفاده از output و format&lt;/p&gt;
+&lt;p&gt;به صورت پیش‌فرض Trivy نتیجه‌ی آزمایش را در حالت جدول مانندی در خروجی نمایش می‌دهد. با استفاده از format , output می‌توانید فرمت خروجی را تغییر دهید. مثلا:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy image hub.hamdocker.ir/library/httpd:2.4.43 --format json --output result.json
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همچنین با استفاده از فرمت template می‌توانید فرمت خروجی اختصاصی خودتان را بسازید.&lt;/p&gt;
+&lt;h3 id="پویش-فایل-سیستم"&gt;پویش فایل سیستم
+&lt;/h3&gt;&lt;p&gt;یکی دیگر از قابلیت‌های مهم Trivy امکان پویش فایل سیستم می‌باشد. با استفاده از این قابلیت می‌توان پکیج‌های مورد استفاده در یک پروژه (به جای کانتینر) را مورد پویش قرار داد. برای مثال در پروژه‌ی زیر نسخه‌های آسیب‌پذیر کتابخانه‌های پرکاربرد requests و pillow مورد استفاده قرار گرفته است.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1.png"
+width="929"
+height="141"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1_hu_1eaef091b7a5b6b0.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t1_hu_b2c473cd4e811fee.png 1024w"
+loading="lazy"
+alt="محتویات فایل requirements.txt پروژه"
+class="gallery-image"
+data-flex-grow="658"
+data-flex-basis="1581px"
+&gt;&lt;/p&gt;
+&lt;p&gt;با استفاده از دستور زیر پروژه مورد آزمایش قرار گرفته است. Trivy به صورت خودکار فایل requirements.txt را شناسایی و تجزیه می‌کند و سپس اقدام به شناسایی آسیب‌پذیری در پکیج‌ها می‌نماید. مسیر قرار گرفتن فایل requirements.txt و بقیه‌ی فایل‌های مشابه برای Trivy اهمیتی ندارد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy fs /tmp/vulnerable_app
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2.png"
+width="1089"
+height="445"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2_hu_6ada980bb12d272.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t2_hu_5d88fe5bca0636ba.png 1024w"
+loading="lazy"
+alt="شناسایی آسیب‌پذیری‌های شناخته‌شده در کتابخانه‌های استفاده شده در پروژه "
+class="gallery-image"
+data-flex-grow="244"
+data-flex-basis="587px"
+&gt;&lt;/p&gt;
+&lt;p&gt;از همین ویژگی پویش فایل سیستم می‌توان برای اجرای عملیات پویش در زمان ساخت ایمیج یا در داخل یک کانتینر نیز استفاده کرد. برای مثال یک فایل requirements.txt و یک Dockerfile با محتویات زیر ایجاد کنید:&lt;/p&gt;
+&lt;div dir=ltr&gt;requirements.txt&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;requests==2.6.0
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;div dir=ltr&gt;Dockerfile&lt;/div&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;FROM hub.hamdocker.ir/library/python:3.7-alpine3.11
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;COPY requirements.txt .
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;RUN apk add curl \
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; &amp;amp;&amp;amp; curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/master/contrib/install.sh | sh -s -- -b /usr/local/bin &amp;amp;&amp;amp; trivy fs --exit-code 1 --no-progress /
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس با دستور زیر فرایند ساختن (build) ایمیج را فراخوانی کنید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;docker build -t test-fs .
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;بعد از اجرای دستور فوق فرایند ساختن ایمیج به علت وجود آسیب‌پذیری در بسته‌های سیستم‌عامل (نسخه‌ی قدیمی Alpine) و همین‌طور آسیب‌پذیری &lt;a class="link" href="https://nvd.nist.gov/vuln/detail/CVE-2018-18074" target="_blank" rel="noopener"
+&gt;CVE-2018-18074&lt;/a&gt; در کتابخانه‌ی requests با خطا خاتمه می‌باید. در تصاویر زیر این مورد نمایش داده شده است.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3.png"
+width="1339"
+height="595"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3_hu_ff0ec94bd45b701e.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t3_hu_1ce66369463c8046.png 1024w"
+loading="lazy"
+alt="پویش بسته‌های سیستم‌عامل توسط Trivy"
+class="gallery-image"
+data-flex-grow="225"
+data-flex-basis="540px"
+&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4.png"
+width="1353"
+height="276"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4_hu_fb2d598f33a55c71.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t4_hu_3b3bcac34846dfe1.png 1024w"
+loading="lazy"
+alt="پویش کتابخانه‌های معین شده در requirements.txt توسط Trivy"
+class="gallery-image"
+data-flex-grow="490"
+data-flex-basis="1176px"
+&gt;&lt;/p&gt;
+&lt;h3 id="پویش-تنظیمات-ناامن-misconfiguration"&gt;پویش تنظیمات ناامن (Misconfiguration)
+&lt;/h3&gt;&lt;p&gt;توانایی شناسایی misconfiguration در سطح فایل‌های تنظیمات (مانیفست‌های) مربوط به Docker, Kubernetes, Terrafrom و &amp;hellip; قابلیت بسیار مهمی دیگری است که در Trivy پیاده‌سازی شده است. با استفاده از conf می‌توان تنظیمات خطرناک در این فایل‌ها را شناسایی کرد. برای مثال در زیر مانیفست ساخت یک پاد در Kubernetes نشان داده شده است. در تعریف این پاد دو مورد ناامن استفاده شده است.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5.png"
+width="523"
+height="96"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5_hu_f0532deb5fd41396.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t5_hu_95315bb3caa0a3c3.png 1024w"
+loading="lazy"
+alt="استفاده از capability خطرناک SYS_ADMIN و حالت privileged در تعریف pod"
+class="gallery-image"
+data-flex-grow="544"
+data-flex-basis="1307px"
+&gt;&lt;/p&gt;
+&lt;p&gt;مورد اول استفاده از capability SYS_ADMIN و مورد دوم اجرای کانتینر در حالت privileged می‌باشد. با استفاده از conf در مسیر جاری که فایل تعریف پاد در آن قرار دارد را مورد آزمایش قرار می‌دهیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ trivy conf --severity HIGH .
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6.png"
+width="1130"
+height="581"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6_hu_a755dcf5ddf94597.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t6_hu_67b1f466952cb320.png 1024w"
+loading="lazy"
+alt="شناسایی موارد خطرناک توسط Trivy"
+class="gallery-image"
+data-flex-grow="194"
+data-flex-basis="466px"
+&gt;&lt;/p&gt;
+&lt;p&gt;همان‌طور که در تصویر بالا مشاهده می‌کنید Trivy فایل‌های موجود در مسیر جاری را تجزیه کرده و نوع آن‌ها را نیز به درستی از نوع مانیفست‌های Kubernetes تشخیص داده و هر دو تنظیم ناامن را نیز شناسایی کرده است. در مسیری که برای پویش تعیین می‌کنیم اگر فایل‌های دیگری نیز وجود داشته باشد Trivy می‌تواند آنها را شناسایی و تحلیل کند. برای تسلط بیشتر بر این قابلیت پیشنهاد می‌کنم &lt;a class="link" href="https://github.com/aquasecurity/trivy/tree/main/examples" target="_blank" rel="noopener"
+&gt;مثال‌هایی&lt;/a&gt; که در مخزن پروژه آورده شده است را مطالعه کنید. همچنین برای آشنایی با سایر ویژگی‌ها نظیر حالت client/server و همچنین مطالعه‌ی دقیق‌تر راجع به آنها می‌توانید به آخرین نسخه‌ی مستندات پروژه Trivy در &lt;a class="link" href="https://trivy.dev/latest/docs/" target="_blank" rel="noopener"
+&gt;اینجا&lt;/a&gt; مراجعه کنید.&lt;/p&gt;
+&lt;h2 id="استفاده-از-trivy-در-فرایند-cicd"&gt;استفاده از Trivy در فرایند CI/CD
+&lt;/h2&gt;&lt;p&gt;در چرخه‌ی توسعه‌ی نرم‌افزار، اگر تست امنیت از گام‌های اولیه و به‌صورت مداوم انجام شود اثرگذاری بسیار زیادی خواهد داشت. برای خودکار کردن پویش ایمیج کانتینرها، در چرخه‌ی &lt;strong&gt;CI/CD&lt;/strong&gt; و هنگام ساخت ایمیج‌ها، بررسی‌های لازم را انجام دهید و در صورت کشف آسیب‌پذیری از انتشار نسخه‌ی ناامن جلوگیری کنید.&lt;/p&gt;
+&lt;p&gt;در GitLab ، در فایل &lt;code&gt;.gitlab-ci.yml&lt;/code&gt; یک فاز برای پویش آسیب‌پذیری‌ها تعریف کنید. نمونه زیر، پس از &lt;strong&gt;build&lt;/strong&gt; و &lt;strong&gt;push&lt;/strong&gt; ایمیج، در فاز &lt;strong&gt;test&lt;/strong&gt; پویش را انجام می‌دهد:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;span class="lnt"&gt;19
+&lt;/span&gt;&lt;span class="lnt"&gt;20
+&lt;/span&gt;&lt;span class="lnt"&gt;21
+&lt;/span&gt;&lt;span class="lnt"&gt;22
+&lt;/span&gt;&lt;span class="lnt"&gt;23
+&lt;/span&gt;&lt;span class="lnt"&gt;24
+&lt;/span&gt;&lt;span class="lnt"&gt;25
+&lt;/span&gt;&lt;span class="lnt"&gt;26
+&lt;/span&gt;&lt;span class="lnt"&gt;27
+&lt;/span&gt;&lt;span class="lnt"&gt;28
+&lt;/span&gt;&lt;span class="lnt"&gt;29
+&lt;/span&gt;&lt;span class="lnt"&gt;30
+&lt;/span&gt;&lt;span class="lnt"&gt;31
+&lt;/span&gt;&lt;span class="lnt"&gt;32
+&lt;/span&gt;&lt;span class="lnt"&gt;33
+&lt;/span&gt;&lt;span class="lnt"&gt;34
+&lt;/span&gt;&lt;span class="lnt"&gt;35
+&lt;/span&gt;&lt;span class="lnt"&gt;36
+&lt;/span&gt;&lt;span class="lnt"&gt;37
+&lt;/span&gt;&lt;span class="lnt"&gt;38
+&lt;/span&gt;&lt;span class="lnt"&gt;39
+&lt;/span&gt;&lt;span class="lnt"&gt;40
+&lt;/span&gt;&lt;span class="lnt"&gt;41
+&lt;/span&gt;&lt;span class="lnt"&gt;42
+&lt;/span&gt;&lt;span class="lnt"&gt;43
+&lt;/span&gt;&lt;span class="lnt"&gt;44
+&lt;/span&gt;&lt;span class="lnt"&gt;45
+&lt;/span&gt;&lt;span class="lnt"&gt;46
+&lt;/span&gt;&lt;span class="lnt"&gt;47
+&lt;/span&gt;&lt;span class="lnt"&gt;48
+&lt;/span&gt;&lt;span class="lnt"&gt;49
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;stages&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;build&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;test&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;build&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;stage&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;build&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;image&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;docker:stable&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;export IMAGE=&amp;#34;registry.hamdocker.ir/GROUP_NAME/PROJECT_NAME&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;docker login -u &amp;#34;$REGISTRY_USER&amp;#34; -p &amp;#34;$REGISTRY_PASSWORD&amp;#34; &amp;#34;$REGISTRY&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;docker build -t PROJECT_NAME:$CI_COMMIT_SHORT_SHA .&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;docker image tag PROJECT_NAME:$CI_COMMIT_SHORT_SHA $IMAGE:$CI_COMMIT_SHORT_SHA&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;docker image push $IMAGE:$CI_COMMIT_SHORT_SHA&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;container_scanning&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;stage&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;test&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;image&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;name&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;hub.hamdocker.ir/aquasec/trivy:latest&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;entrypoint&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;&amp;#34;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;variables&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;GIT_STRATEGY&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;none&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;TRIVY_USERNAME&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;$REGISTRY_USER&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;TRIVY_PASSWORD&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;$REGISTRY_PASSWORD&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;TRIVY_AUTH_URL&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="s2"&gt;&amp;#34;$REGISTRY&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;FULL_IMAGE_NAME&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;registry.hamdocker.ir/GROUP_NAME/PROJECT_NAME:$CI_COMMIT_SHORT_SHA&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;script&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;trivy --version&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# پاکسازی کش ایمیج‌ها (پایگاه‌داده حذف نمی‌شود)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;trivy image --clear-cache&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# به‌روزرسانی دیتابیس آسیب‌پذیری‌ها&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;trivy image --download-db-only --no-progress --cache-dir .trivycache/&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# تولید گزارش GitLab&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;trivy image --exit-code 0 --cache-dir .trivycache/ --no-progress \&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;--&lt;span class="l"&gt;format template --template &amp;#34;@/contrib/gitlab.tpl&amp;#34; \&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;--&lt;span class="l"&gt;output &amp;#34;gl-container-scanning-report.json&amp;#34; &amp;#34;$FULL_IMAGE_NAME&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c"&gt;# شکست Job در صورت وجود CRITICAL&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;trivy image --exit-code 1 --cache-dir .trivycache/ --severity CRITICAL --no-progress &amp;#34;$FULL_IMAGE_NAME&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;cache&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;paths&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;.trivycache/&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;artifacts&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;when&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;always&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;paths&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;gl-container-scanning-report.json&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;reports&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;container_scanning&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;gl-container-scanning-report.json&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;only&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nt"&gt;refs&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;- &lt;span class="l"&gt;master&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای استفاده از این مثال باید در قسمت variables در تعریف FULL_IMAGE_NAME نام گروه و نام پروژه را وارد کنید. مثلا به صورت زیر&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-yaml" data-lang="yaml"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nt"&gt;FULL_IMAGE_NAME&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="l"&gt;registry.hamdocker.ir/milad/myapp:$CI_COMMIT_SHORT_SHA&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;پس از اضافه کردن این فاز پس از هر commit در مخزن فرآیند build اجرا می‌شود و بعد از آن در فرآیند test عملیات پویش امنیتی ایمیج کانتینر صورت می‌گیرد. در این فاز بعد از آپدیت کردن دیتابیس Trivy پویش کامل ایمیج صورت می‌گیرد که نتیجه‌ی اجرای آن در فایل gl-container-scanning-report.json ذخیره می‌شود. در تصویر زیر مشاهده می‌کنیم که فرآیند پویش امنیتی به دلیل وجود آسیب‌پذیری با خطا خاتمه یافته است. در سمت راست در قسمت Job artifact می‌توانید گزارش پویش را دانلود و مشاهده کنید.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7.png"
+width="1337"
+height="588"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7_hu_907b5851e20247f8.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t7_hu_570af99cd9b8603f.png 1024w"
+loading="lazy"
+alt="فرآیند test مربوط به پویش امنیتی با شکست خاتمه یافته است"
+class="gallery-image"
+data-flex-grow="227"
+data-flex-basis="545px"
+&gt;&lt;/p&gt;
+&lt;p&gt;همچنین گزارش این پویش در بخش Security Dashboard &amp;gt; Vulnerability Report در دسترس می‌باشد.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8.png"
+width="1297"
+height="575"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8_hu_b190b03bfa1cf713.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t8_hu_622b9981bf31e8f0.png 1024w"
+loading="lazy"
+alt="نمایش فهرست آسیب‌پذیری‌های کشف شده در این پروژه در قسمت Vulnerability Report"
+class="gallery-image"
+data-flex-grow="225"
+data-flex-basis="541px"
+&gt;&lt;/p&gt;
+&lt;p&gt;در تصویر بالا مشاهده می‌کنیم که آسیب‌پذیری‌های کشف شده در فرآیند CI/CD در قسمت Vulnerability Report آورده شده است که برای افراد دخیل در پروژه قابل پیگیری می‌باشد.&lt;/p&gt;
+&lt;p&gt;همان‌طور که اشاره شد با هربار commit کردن در مخزن این فرآیند اجرا خواهد شد و اگر پروژه دارای آسیب‌پذیری با درجه‌ی CRITICAL باشد، job فعلی با خطا خاتمه می‌یابد و فرآیند deploy صورت نخواهد گرفت.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9.png"
+width="1253"
+height="570"
+srcset="https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9_hu_9ae506bc3678c8fa.png 480w, https://fa.miladbr.uk/p/%D9%BE%D9%88%DB%8C%D8%B4-%D8%A7%D9%85%D9%86%DB%8C%D8%AA%DB%8C-%D8%A7%DB%8C%D9%85%DB%8C%D8%AC-%D8%A8%D8%A7-trivy/t9_hu_66d92071637dc8c3.png 1024w"
+loading="lazy"
+alt="فرآیند test با خطا مواجه شده است."
+class="gallery-image"
+data-flex-grow="219"
+data-flex-basis="527px"
+&gt;&lt;/p&gt;
+&lt;h2 id="نتیجهگیری"&gt;نتیجه‌گیری
+&lt;/h2&gt;&lt;p&gt;در این نوشتار دیدیم که استفاده از ابزار Trivy ساده است و به راحتی می‌توان از آن در توسعه‌ی یک پروژه‌ و فرآیند CI/CD استفاده کرد. بروز بودن این ابزارها و قدرت‌شان در تشخیص پکیج‌ها و وابستگی‌ها در سطح سیستم‌عامل و زبان‌های برنامه‌نویسی بسیار قابل اتکاست، که با بهره‌گیری از آنها بخش زیادی از آسیب‌پذیری‌ها به سرعت در فاز توسعه کشف می‌شوند و از انتشار نسخه‌ی ناامن جلوگیری خواهد شد. در نظر داشته باشید که ممکن است حتی پس از انتشار یک نسخه نیز آسیب‌پذیری‌های در بسته‌ها و کتابخانه‌ها کشف شود. در این شرایط پیشنهاد می‌شود که با خودکار کردن فرآیند تست، به صورت پیوسته در زمان‌های معینی در طول روز همه‌ی کانتینر‌های در حال اجرا در کلاستر را از جنبه‌ی امنیت تست کنید.&lt;/p&gt;
+&lt;/div&gt;</description></item><item><title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲</title><link>https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/</link><pubDate>Sun, 07 Mar 2021 13:25:07 +0000</pubDate><guid>https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/</guid><description>&lt;img src="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cover.png" alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس - قسمت ۲" /&gt;&lt;div dir="rtl"&gt;
+&lt;p&gt;در این نوشتار در دو قسمت به بررسی فضانام‌ها در لینوکس و جزئیات ایزوله کردن پردازه پرداخته‌ایم. آشنایی با این جزئیات کمک می‌کند که درک درست‌تری از کانتینری کردن یک پردازه توسط تکنولوژی‌هایی مثل داکر داشته باشیم. در قسمت &lt;a class="link" href="https://fa.miladbr.uk/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b1/" &gt;اول&lt;/a&gt; این نوشتار فضانام‌های uts، pid، mount و network را مورد بررسی قرار دادیم. در این قسمت به بررسی فضانام‌های user، ipc، cgroup و time می‌پردازیم.&lt;/p&gt;
+&lt;h2 id="فضانام-کاربر-user"&gt;فضانام کاربر (user)
+&lt;/h2&gt;&lt;p&gt;این فضا‌نام به پردازه‌ها اجازه می‌دهد که User ID و Group ID جدا از میزبان داشته باشند. مهم‌ترین مزیتی که این سطح از ایزوله کردن فراهم می‌کند این است که در داخل کانتینر می‌توان کاربر یک root داشت که خارج از کانتینر یک کاربر غیر root باشد. یکی از چالش‌های امنیتی کانتینرها دور زدن مکانیزم‌های امنیتی (مثلا container escape) و دسترسی به میزبان است. از منظر امنیت این یک ویژگی کلیدی است که اجازه می‌دهد پردازه‌ی داخل کانتینر که وابسته به کاربر root است اجرا شود ولی حتی اگر به نحوی پردازه‌ بتواند از محیط ایزوله خارج شود سطح دسترسی آن در میزبان کم‌تر از کاربر root می‌باشد.&lt;/p&gt;
+&lt;p&gt;برای آزمایش این ویژگی دستورات زیر را اجرا می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ unshare --user bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;65534&lt;span class="o"&gt;(&lt;/span&gt;nobody&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;65534&lt;span class="o"&gt;(&lt;/span&gt;nogroup&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;65534&lt;span class="o"&gt;(&lt;/span&gt;nogroup&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ capsh --print &lt;span class="p"&gt;|&lt;/span&gt; grep Current
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Current: &lt;span class="o"&gt;=&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همان‌طور که می‌بینیم در فضانام user که ساختیم کاربر دارای شناسه‌ی nobody است و همین‌طور هیچ capability نیز به آن تخصیص نیافته است.&lt;/p&gt;
+&lt;p&gt;برای ادامه‌ی کار به pid پردازه‌ی bash در این فضانام نیاز داریم. در اینجا باید یک نگاشت بین شناسه‌ی کاربر در داخل فضانام و داخل میزبان ایجاد کنیم. این نگاشت باید در فایل proc/&lt;pid&gt;/uid_map/ اعمال شود. برای اینکه بدانیم چه مقادیری وارد شود نیاز است که ساختار آن را بدانیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="nv"&gt;$$&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;27391&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;توضیح:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ man user_namespaces
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Each line in the uid_map file specifies a 1-to-1 mapping of a range of contiguous user IDs between two user namespaces. &lt;span class="o"&gt;(&lt;/span&gt;When a
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;user namespace is first created, this file is empty.&lt;span class="o"&gt;)&lt;/span&gt; The specification in each line takes the form of three numbers delimited
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;by white space. The first two numbers specify the starting user ID in each of the two user namespaces. The third number speci‐
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;fies the length of the mapped range.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با توجه به توضیحات موجود در راهنمای user_namespaces در این فایل باید سه مقدار معین شود. مقدار اول مشخص کننده‌ی شناسه‌ی کاربر در فضانام ایجاد شده می‌باشد. مقدار دوم مشخص کننده‌ی شناسه‌ی کاربر در میزبان می‌باشد و سومین مقدار تعداد شناسه‌ها برای نگاشت را مشخص می‌کند. به طور خلاصه:&lt;/p&gt;
+&lt;div dir=ltr&gt;
+&lt;p&gt;&lt;code&gt;UID-inside-namespace UID-outside-namespace length&lt;/code&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;p&gt;برای مثال اگر بخواهیم کاربر milad را به کاربر root در داخل فضانام بایند کنیم باید به ترتیب مقادیر 1000 (شناسه‌ی کاربر milad در میزبان)، 0 (شناسه‌ی کاربر root در فضانام) و 1 (فقط یک نگاشت می‌خواهیم انجام بدیم).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;1000&lt;span class="o"&gt;(&lt;/span&gt;milad&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;1000&lt;span class="o"&gt;(&lt;/span&gt;milad&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;1000&lt;span class="o"&gt;(&lt;/span&gt;milad&lt;span class="o"&gt;)&lt;/span&gt;,27&lt;span class="o"&gt;(&lt;/span&gt;sudo&lt;span class="o"&gt;)&lt;/span&gt;,104&lt;span class="o"&gt;(&lt;/span&gt;input&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;0 1000 1&amp;#39;&lt;/span&gt; &amp;gt; /proc/31196/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;مشابه همین نگاشت برای شناسه‌ی گروه (gid) نیز انجام می‌شود.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo &lt;span class="nb"&gt;echo&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;0 1000 1&amp;#39;&lt;/span&gt; &amp;gt; /proc/27391/gid_map
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس مجددا در ترمینال ایجاد شده در فضانام دستور id را اجرا می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt;,65534&lt;span class="o"&gt;(&lt;/span&gt;nogroup&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ cat /proc/self/uid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;1000&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ cat /proc/self/gid_map
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;1000&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;nobody@Milad-PC:/tmp$ capsh --print &lt;span class="p"&gt;|&lt;/span&gt; grep Current
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Current: &lt;span class="o"&gt;=&lt;/span&gt; cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read+ep
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با توجه به خروجی بالا مشاهده می‌شود که کاربر در داخل فضانام root است و به capabilityها دسترسی دارد و در خارج از فضانام همان ‌کاربر milad با شناسه کاربری 1000 می‌باشد.&lt;/p&gt;
+&lt;h2 id="فضانام-ارتباط-بین-پردازهایipc"&gt;فضانام ارتباط بین پردازه‌ای(IPC)
+&lt;/h2&gt;&lt;p&gt;در سیستم‌عامل لینوکس دو پردازه‌ می‌توانند از طریق حافظه‌ی مشترک یا صف پیام مشترک ([mq_open]https://man7.org/linux/man-pages/man3/mq_open.3.html)) با یکدیگر پیام تبادل کنند. برای اینکار این دو پردازه باید عضو یک فضا‌نام IPC یکسان باشند. از طرفی به طور پیش‌فرض ما انتظار داریم که پردازه‌های موجود در کانتینرهای مختلف نتوانند به حافظه‌ی مشترک یکدیگر دسترسی داشته باشند برای همین برای آن‌ها فضانام‌های IPC مجزا ایجاد می‌کنیم.&lt;/p&gt;
+&lt;p&gt;برای نمونه می‌بینیم که به صورت پیش‌فرض کانتینرها در داکر دارای فضانام ipc اختصاصی هستند:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ docker ps --quiet --all &lt;span class="p"&gt;|&lt;/span&gt; xargs docker inspect --format &lt;span class="s1"&gt;&amp;#39;{{ .Id }}: IpcMode={{ .HostConfig.IpcMode }}&amp;#39;&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;037ad3a550a7de78ac9a929159b627e765cf753a314f9f4c7f564127b7ac9ccb: &lt;span class="nv"&gt;IpcMode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;private
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;8676c058096d7337cd497457da25a596f2cc6f317b01d033b2c53329fc6e2619: &lt;span class="nv"&gt;IpcMode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;private
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;d1704e1cb4f280d5e5afeabb8064526fc09f297183006086354fe443c5359b42: &lt;span class="nv"&gt;IpcMode&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;private
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای آزمایش فضانام ipc ابتدا یک حافظه‌ی مشترک ایجاد می‌کنیم سپس با دستور ipcs فهرست ipcهای موجود را بررسی می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ipcmk -M &lt;span class="m"&gt;1000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Shared memory id: &lt;span class="m"&gt;2044428296&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ipcs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Message Queues --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key msqid owner perms used-bytes messages
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Shared Memory Segments --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key shmid owner perms bytes nattch status
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0x00000000 &lt;span class="m"&gt;2033451008&lt;/span&gt; milad &lt;span class="m"&gt;600&lt;/span&gt; &lt;span class="m"&gt;524288&lt;/span&gt; &lt;span class="m"&gt;2&lt;/span&gt; dest
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0xaac7b1b4 &lt;span class="m"&gt;2044428296&lt;/span&gt; milad &lt;span class="m"&gt;644&lt;/span&gt; &lt;span class="m"&gt;1000&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0x00000000 &lt;span class="m"&gt;849346606&lt;/span&gt; milad &lt;span class="m"&gt;600&lt;/span&gt; &lt;span class="m"&gt;524288&lt;/span&gt; &lt;span class="m"&gt;2&lt;/span&gt; dest
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Semaphore Arrays --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key semid owner perms nsems
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0xe93c17d9 &lt;span class="m"&gt;131072&lt;/span&gt; milad &lt;span class="m"&gt;666&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0xcdbd64db &lt;span class="m"&gt;163841&lt;/span&gt; milad &lt;span class="m"&gt;600&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس با استفاده از unshare یک فضانام ipc ایجاد می‌کنیم و با دستور ipcs فهرست ipcها را بررسی می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --ipc /bin/bash root@Milad-PC:~# ipcs
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Message Queues --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key msqid owner perms used-bytes messages
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Shared Memory Segments --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key shmid owner perms bytes nattch status
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;------ Semaphore Arrays --------
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;key semid owner perms nsems
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همان‌طور که مشاهده می‌کنیم پردازه‌ی موجود در داخل فضانام جدید به فهرست ipcهای موجود در میزبان دسترسی ندارد.&lt;/p&gt;
+&lt;h2 id="فضانام-cgroup"&gt;فضانام cgroup
+&lt;/h2&gt;&lt;p&gt;در سیستم‌عامل منابعی مانند پردازنده (CPU)، حافظه‌ی اصلی (RAM)، پهنای‌باند شبکه و &amp;hellip; به صورت مشترک بین پردازه‌ها استفاده می‌شود. در این شرایط یک پردازه می‌تواند به صورت ناعادلانه بخش زیادی از این منابع را تصرف نماید. برای محدود کردن میزان مصرف این منابع توسط پردازه‌ها در سیستم‌عامل لینوکس قابلیتی به نام control groups یا به اختصار cgroups وجود دارد. با بهره‌برداری از cgroups مدیر سیستم می‌تواند به صورت دقیق و بهینه بر روی تخصیص و محدود کردن (Resource limiting)، اولویت‌بندی (Prioritization)، مدیریت (Control) و حسابرسی (Accounting) منابع (زیر سیستم‌ها) کنترل داشته باشد.&lt;/p&gt;
+&lt;p&gt;تنظیمات cgroupها در قالب یک فایل سیستم مجازی و به صورت سلسله مراتبی نگه‌داری می‌شود. این ساختار مشابه اطلاع پردازه‌ها در مسیر proc/ می‌باشد. در این ساختار سلسله‌ مراتبی می‌توان cgroup‌های متعددی تعریف کرد که هر کدام از آن‌ها می‌تواند اطلاعاتی را از پدرش به ارث ببرد. همین‌طور هر کدام از cgroupها می‌تواند برای محدود کردن یک یا چند منابع (RAM, CPU, &amp;hellip;) تعریف شده باشند.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups.jpeg"
+width="1000"
+height="651"
+srcset="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups_hu_62f37eab3b9c69f7.jpeg 480w, https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B2/cgroups_hu_d45579a107e31162.jpeg 1024w"
+loading="lazy"
+alt=" منبع: https://twitter.com/b0rk/status/1214341831049252870"
+class="gallery-image"
+data-flex-grow="153"
+data-flex-basis="368px"
+&gt;&lt;/p&gt;
+&lt;p&gt;در لینوکس ۱۲ نوع کنترلر (زیرسیستم) برای cgroup وجود دارد که جزئیات دقیق آن‌ها را می‌توانید در &lt;a class="link" href="https://man7.org/linux/man-pages/man7/cgroups.7.html" target="_blank" rel="noopener"
+&gt;اینجا&lt;/a&gt; مطالعه کنید. با استفاده از دستور زیر می‌توانید فهرست آن‌ها را مشاهده کنید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ cat /proc/cgroups &lt;span class="c1"&gt;#subsys_name hierarchy num_cgroups enabled&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cpuset 9 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cpu 10 94 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;cpuacct 10 94 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;blkio 3 94 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;memory 4 132 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;devices 12 95 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;freezer 5 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;net_cls 8 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;perf_event 7 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;net_prio 8 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;hugetlb 11 2 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;pids 2 102 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;rdma 6 1 &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;وقتی شما از یک تکنولوژی کانتینری استفاده می‌کنید به صورت خودکار عملیات لازم و مرتبط با تنظیمات شما اجرا خواهد شد. برای مثال در داکر با استفاده از دستور زیر یک کانتینر ایجاد کنید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ docker run -d --cpus&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;quot1.0&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;quot --memory&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;quot1g&lt;span class="p"&gt;&amp;amp;&lt;/span&gt;quot hub.hamdocker.ir/library/alpine sleep &lt;span class="m"&gt;6000&lt;/span&gt; bdd23fa5e49a88476f711a75e55a4ad5bd0d52fb3469a4c9d75b3f1e40a84cd1
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس با استفاده از شناسه‌ی (ID) کانتینر ایجاد شده در داخل مسیر مربوط به cgroupها در داخل سیستم میزبان شناسه‌ی پردازه‌‌های مربوط به این cgroup را مشاهده می‌کنیم. مقدار pid درج شده در این فایل مربوط به پردازه‌ی sleep اجرا شده در داخل کانتینر است.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ cat /sys/fs/cgroup/devices/docker/bdd23fa5e49a88476f711a75e55a4ad5bd0d52fb3469a4c9d75b3f1e40a84cd1/tasks
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;29881&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با بررسی پردازه‌ها از طریق سیستم میزبان صحت این موضوع را بررسی می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ps -eaf &lt;span class="p"&gt;|&lt;/span&gt; grep &lt;span class="m"&gt;29881&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;29881&lt;/span&gt; &lt;span class="m"&gt;29849&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:07 ? 00:00:00 sleep &lt;span class="m"&gt;6000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;milad &lt;span class="m"&gt;29954&lt;/span&gt; &lt;span class="m"&gt;7914&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:08 pts/1 00:00:00 grep --color&lt;span class="o"&gt;=&lt;/span&gt;auto --exclude-dir&lt;span class="o"&gt;=&lt;/span&gt;.bzr --exclude-dir&lt;span class="o"&gt;=&lt;/span&gt;CVS --exclude-dir&lt;span class="o"&gt;=&lt;/span&gt;.git --exclude-dir&lt;span class="o"&gt;=&lt;/span&gt;.hg --exclude-dir&lt;span class="o"&gt;=&lt;/span&gt;.svn &lt;span class="m"&gt;29881&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;فضانام cgroup برای جلوگیری از دسترسی پردازه‌ها به تنظیمات cgroup یکدیگر می‌باشد. هر پردازه در فضانام cgroup مسیر ریشه‌ی مختص به خود را خواهد داشت. این جداسازی هم از منظر امنیت جهت جلوگیری از نشت اطلاعات میزبان و هم از منظر صحت عملکرد به دلیل وجود قابلیت ارث‌بری و عدم تصادم نام‌ها مهم است.&lt;/p&gt;
+&lt;p&gt;برای بررسی قابلیت فضانام cgroup، یک فضانام از این نوع ایجاد می‌کنیم سپس محتویات فایل /proc/self/cgroup را در داخل فضانام و داخل ماشین میزبان بررسی می‌کنیم.&lt;/p&gt;
+&lt;p&gt;در داخل میزبان:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ cat /proc/self/cgroup
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;12:devices:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;11:hugetlb:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;10:cpu,cpuacct:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;9:cpuset:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;8:net_cls,net_prio:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;7:perf_event:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;6:rdma:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;5:freezer:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4:memory:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3:blkio:/user.slice
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2:pids:/user.slice/user-1000.slice/session-2.scope
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1:name&lt;span class="o"&gt;=&lt;/span&gt;systemd:/user.slice/user-1000.slice/session-2.scope0::/user.slice/user-1000.slice/session-2.scope
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در داخل فضانام:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --cgroup /bin/bash root@Milad-PC:/proc/7914# cat /proc/self/cgroup
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;12:devices:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;11:hugetlb:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;10:cpu,cpuacct:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;9:cpuset:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;8:net_cls,net_prio:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;7:perf_event:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;6:rdma:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;5:freezer:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4:memory:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;3:blkio:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2:pids:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1:name&lt;span class="o"&gt;=&lt;/span&gt;systemd:/
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;0::/
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همان‌طور که مشاهده می‌کنیم محتویات این دو فایل متفاوت است.&lt;/p&gt;
+&lt;h2 id="فضانام-time"&gt;فضانام time
+&lt;/h2&gt;&lt;p&gt;یکی دیگر از فضانام‌ها در لینوکس که اخیرا در کرنل نسخه‌ی ۵.۶ اضافه شده است فضانام زمان یا time است. با استفاده از این فضانام پردازه‌ها می‌توانند مقادیر دلخواهی برای CLOCK_MONOTONIC و CLOCK_BOOTTIME داشته باشد. بنابراین زمان جاری و مقدار uptime میزبان می‌تواند با پردازه‌ی داخل این فضانام متفاوت باشد. داکر و تکنولوژی‌های مشابه آن فعلا از این ویژگی در زمان ایجاد کانتینر استفاده نمی‌کنند.&lt;/p&gt;
+&lt;p&gt;برای مثال با استفاده از دستور زیر می‌توانید یک کانتینر ایجاد کنید و مقدار uptime را در داخل کانیتنر و میزبان مقایسه کنید.&lt;/p&gt;
+&lt;p&gt;در داخل کانتینر:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ docker run --rm -it hub.hamdocker.ir/library/alpine sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# uptime&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt; 23:03:49 up &lt;span class="m"&gt;1&lt;/span&gt; day, 13:16, load average: 1.11, 0.74, 0.63
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در داخل میزبان:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ uptime
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;02:34:01 up &lt;span class="m"&gt;1&lt;/span&gt; day, 13:17, &lt;span class="m"&gt;4&lt;/span&gt; users, load average: 1.02, 0.74, 0.64
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;این تفاوت ساعت در داخل کانتینر و میزبان به علت تفاوت timezone می‌باشد.&lt;/p&gt;
+&lt;h2 id="جمعبندی"&gt;جمع‌بندی
+&lt;/h2&gt;&lt;p&gt;بعد از آشنایی با فضانام‌ها در لینوکس و cgroups حالا درک درست‌تری از کانتینر‌ها یا کانتینری کردن یک پردازه داریم. الان می‌دانیم که در داخل یک کانتینر یک پردازه‌ در حال اجرا است که توسط فضانام‌ها ایزوله شده و آستانه‌ی مصرف منابع آن‌ها توسط قابلیت cgroups محدود شده است. تصویر زیر به خوبی نحوه‌ی عملکرد این ویژگی‌ها را نمایش می‌دهد.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/linunx-ns-2.png"
+loading="lazy"
+alt="منبع: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html/overview_of_containers_in_red_hat_systems/introduction_to_linux_containers"
+&gt;&lt;/p&gt;
+&lt;p&gt;البته باید توجه داشت که همه‌ی این پردازه‌های کانتینری شده بر روی یک کرنل مشترک اجرا می‌شوند و مفهوم ایزوله شدن نبست به اجرا در یک ماشین مجازی (virtual machine) به معنای واقعی اینجا رعایت نمی‌شود که می‌تواند از منظر امنیت مخاطراتی داشته باشد. برای مثال یک آسیب‌پذیری یا تنظیمات غیر امن می‌تواند منجر به خارج شدن از داخل کانتینر شود و در نتیجه دسترسی به تمامی کانتینرها فراهم شود. در نوشتارهای آتی به بررسی این نوع حملات می‌پردازیم.&lt;/p&gt;
+&lt;/div&gt;</description></item><item><title>فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول</title><link>https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/</link><pubDate>Tue, 02 Mar 2021 13:04:26 +0000</pubDate><guid>https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/</guid><description>&lt;img src="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/cover.png" alt="Featured image of post فضانام‌ها و ایزوله کردن پردازه‌ها در لینوکس — قسمت اول" /&gt;&lt;div dir="rtl"&gt;
+&lt;p&gt;در این نوشتار می‌خواهیم چگونگی ایزوله کردن یک پردازه در سیستم‌عامل لینوکس را بررسی کنیم. اگر با Docker یک کانتینر ایجاد کرده باشید، در زمان کار با آن احساس کرده‌اید که داخل آن مشابه محیط یک ماشین مجازی است. مثلاً متوجه شده‌اید که از دید یک پردازه‌ی در حال اجرا در داخل کانتینر، فهرست پردازه‌ها، شبکه و فایل‌سیستم با ماشین میزبان متفاوت است، همچنین میزان منابعی مانند RAM و CPU از دید پردازه‌های داخل کانتینر محدودتر از کل مقدار در اختیار میزبان می‌باشد.&lt;/p&gt;
+&lt;p&gt;این سطح از ایزوله‌کردن در سیستم‌عامل لینوکس توسط ویژگی‌های &lt;strong&gt;namespace (فضانام)&lt;/strong&gt;، &lt;strong&gt;cgroups&lt;/strong&gt;, &lt;strong&gt;pivot_root&lt;/strong&gt; و &amp;hellip; پیاده‌سازی می‌شود. ایزوله کردن پردازه‌ها موضوع کلیدی در مورد نحوه‌ی عمل‌کرد کانتینرها می‌باشد. فضا‌نام‌ها منابعی را به کانتینر اختصاص می‌دهند که کاملاً مستقل از میزبان (host) و بقیه‌ی کانتینر‌های مجاور می‌باشد.&lt;/p&gt;
+&lt;p&gt;این نوشتار در دو قسمت تنظیم شده است که در ادامه &lt;strong&gt;قسمت اول&lt;/strong&gt; آن را می‌خوانید. قسمت دوم این مطلب را می‌توانید از &lt;a class="link" href="https://fa.miladbr.uk/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b2/" &gt;اینجا&lt;/a&gt; دنبال کنید.&lt;/p&gt;
+&lt;h2 id="فضانامها-namespaces-در-لینوکس"&gt;فضا‌نام‌ها (namespaces) در لینوکس
+&lt;/h2&gt;&lt;p&gt;فضانام یک ابزار برای محدود کردن دید پردازه‌ها نسبت به ماشین میزبان است. در kernel لینوکس فضانام‌های مختلفی وجود دارد که استفاده از هر کدام از آن‌ها اجازه می‌دهد یک پردازه در همان فضانام (مثلا شبکه) دید مختص به خود را داشته باشد. مثلاً دو پردازه‌ی در حال اجرا در میزبان می‌توانند فایل سیستم مشترکی داشته باشند ولی دید آن‌ها نسبت به کارت شبکه و تنظیمات آن متفاوت باشد و احساس کنند در دو شبکه‌ی مجزا قرار دارند. به خاطر همین سطح از ایزوله کردن، فضانام‌ها یکی از ابزارهای کلیدی برای کانتینری کردن برنامه‌ها هستند.&lt;/p&gt;
+&lt;p&gt;&lt;img src="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns.jpeg"
+width="1000"
+height="659"
+srcset="https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns_hu_a83b64bd9ca635dd.jpeg 480w, https://fa.miladbr.uk/p/%D9%81%D8%B6%D8%A7%D9%86%D8%A7%D9%85%D9%87%D8%A7-%D8%AF%D8%B1-%D9%84%DB%8C%D9%86%D9%88%DA%A9%D8%B3-%DB%B1/ns_hu_d6f8dd6200a36f06.jpeg 1024w"
+loading="lazy"
+alt="منبع: https://twitter.com/b0rk/status/1240364585766576128"
+class="gallery-image"
+data-flex-grow="151"
+data-flex-basis="364px"
+&gt;&lt;/p&gt;
+&lt;h3 id="فضانامهای-موجود-در-لینوکس"&gt;فضانام‌های موجود در لینوکس
+&lt;/h3&gt;&lt;div dir=ltr&gt;
+&lt;ul&gt;
+&lt;li&gt;Unix Time Sharing (&lt;strong&gt;uts&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Process ID (&lt;strong&gt;pid&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Mount (&lt;strong&gt;mnt&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Network (&lt;strong&gt;net&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;User ID / Group ID (&lt;strong&gt;user&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Inter-Process Communications (&lt;strong&gt;ipc&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;Control Groups (&lt;strong&gt;cgroup&lt;/strong&gt;)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;time&lt;/strong&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;p&gt;برای مشاهدهٔ فضانام‌های موجود در سیستم‌عامل می‌توانید از دستور &lt;code&gt;lsns&lt;/code&gt; استفاده کنید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sudo lsns
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;خروجی نمونه:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo lsns
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;NS TYPE NPROCS PID USER COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531835 cgroup 405 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531836 pid 354 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531837 user 361 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531838 uts 397 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531839 ipc 397 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026531840 mnt 385 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;4026532009 net 353 1 root /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;به صورت پیش‌فرض در ماشین میزبان از هر نوع فضانام یک مورد وجود دارد که توسط پردازه‌ها مورد استفاده قرار می‌گیرد. پردازه‌ها می‌توانند فضانام‌های بیشتری از نو‌ع‌های مختلفی ایجاد کنند و به آن متصل شوند. البته هر پردازه فقط می‌تواند در یک فضانام از یک نوع باشد. همچنین در صورتی که فضانام خالی باشد (مثلا هیچ‌ پردازه‌ای به آن متصل نشده باشد یا هیچ bind mount در آن وجود نداشته باشد و &amp;hellip;) کرنل به صورت خودکار آن را حذف می‌کند. در ادامه به بررسی فضانام‌ها می‌پردازیم.&lt;/p&gt;
+&lt;h2 id="unshare-چیست"&gt;Unshare چیست؟
+&lt;/h2&gt;&lt;p&gt;در فضای سیستم‌عامل وقتی شما درخواست اجرای یک برنامه را صادر می‌کنید، سیستم‌عامل با اجرای یک سری روال‌ها و سپس کپی‌کردن کد برنامه در حافظه‌ی اصلی (رم) یک پردازه‌ی جدید ایجاد می‌کند و به اصطلاح آن برنامه را اجرا می‌کند. در این فضا دو مفهوم پدر (parent) و فرزند (child) وجود دارد که به صورت پیش‌فرض با هم داده‌های مشترکی دارند (برای اطلاعات بیشتر به &lt;a class="link" href="https://man7.org/linux/man-pages/man2/fork.2.html" target="_blank" rel="noopener"
+&gt;fork&lt;/a&gt; و &lt;a class="link" href="https://man7.org/linux/man-pages/man2/clone.2.html" target="_blank" rel="noopener"
+&gt;clone&lt;/a&gt; مراجعه کنید). برای ایزوله‌ کردن پردازه‌ها و حذف این نقاط مشترک می‌توان از یک systemcall به نام unshare استفاده کرد. در ‌واقع با استفاده از unshare می‌توان یک برنامه را با فضانام‌هایی مختص به خودش که با پدرش یا دیگر پردازه‌های در حال اجرا مشترک نباشد، اجرا نمود.&lt;/p&gt;
+&lt;p&gt;اگر علاقه‌مند هستید جزئیات بیشتری بدانید راجع به &lt;a class="link" href="https://man7.org/linux/man-pages/man2/setns.2.html" target="_blank" rel="noopener"
+&gt;set_ns&lt;/a&gt; &lt;a class="link" href="https://man7.org/linux/man-pages/man2/clone.2.html" target="_blank" rel="noopener"
+&gt;،clone&lt;/a&gt; &lt;a class="link" href="https://man7.org/linux/man-pages/man1/nsenter.1.html" target="_blank" rel="noopener"
+&gt;،nsenter&lt;/a&gt; و &lt;a class="link" href="https://man7.org/linux/man-pages/man2/pivot_root.2.html" target="_blank" rel="noopener"
+&gt;pivot_root&lt;/a&gt; مطالعه کنید.&lt;/p&gt;
+&lt;h2 id="فضانام-uts"&gt;فضانام UTS
+&lt;/h2&gt;&lt;p&gt;هر ماشین دارای یک شناسه‌ است که به آن hostname گفته می‌شود. درست مانند URL هر وب‌سایت از این شناسه می‌توان برای اشاره به آن ماشین در داخل آن ماشین یا شبکه استفاده کرد. اگر یک ترمینال بر روی سیستم‌عامل لینوکس باز کنید با استفاده از دستور hostname می‌توانید مقدار hostname فعلی را ببینید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Milad-PC
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با قرار دادن یک پردازه در یک فضانام UTS اختصاصی، پردازه صاحب hostname و domainname اختصاصی خواهد شد و می‌توان مقادیر دلخواهی برای hostname و domainname برای آن پردازه تنظیم کرد که این تغییر تاثیری در مقادیر مربوطه در ماشین میزبان نخواهد داشت.&lt;/p&gt;
+&lt;p&gt;تکنولوژی‌های کانتینری‌کردن (مانند داکر) به هر کانتینر یک شناسه‌ی تصادفی اختصاص می‌دهند که به صورت پیش‌فرض همین شناسه به عنوان hostname در آن کانتینر استفاده می‌شود. برای بررسی این موضوع با استفاده از دستور زیر می‌توان یک کانتینر ایجاد کرد و مقدار hostname داخل کانتینر را مشاهده نمود.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ docker run --rm -it --name hostname-test hub.hamdocker.ir/library/alpine sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# hostname&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;a6b9c92876b7
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با استفاده از unshare می‌توانیم یک فضانام جدید UTS ایجاد کنیم و این مورد را آزمایش کنیم. برای اینکار باید unshare را با دسترسی کاربر root اجرا کنیم. در زمان فراخوانی unshare نوع فضانام و نام‌ برنامه‌ای که می‌خواهیم اجرا کنیم را باید وارد کنیم. در صورتی که نام برنامه وارد نشود به صورت پیش‌فرض از مقدار {SHELL}$ استفاده خواهد شد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --uts /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Milad-PC
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# hostname xyz-hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;xyz-hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# &lt;span class="nb"&gt;exit&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nb"&gt;exit&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Milad-PC
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;این کار باعث شده که bash داخل یک پردازه‌ی جدید که فضانام UTS مختص به خودش را دارد اجرا شود. هر برنامه‌ای که در این شل اجرا شود نیز این فضانام را به ارث خواهد برد. برای مثال همان‌طور که در بالا می‌بینید با اجرای hostname ابتدا همان مقدار تنظیم شده در ماشین میزبان نمایش داده می‌شود، سپس با تنظیم یک مقدار جدید، hostname در این فضانام تغییر می‌کند ولی در میزبان تغییر اعمال نشده است. این ایزوله کردن باعث می‌شود که میزبان و مهمان بدون تأثیر بر روی همدیگر مقادیر hostname را به مقداری دلخواه تغییر دهند.&lt;/p&gt;
+&lt;h2 id="فضانام-شناسه-پردازهها-pid"&gt;فضانام شناسهٔ پردازه‌ها (PID)
+&lt;/h2&gt;&lt;p&gt;اگر شما دستور ps را داخل یک کانتینر اجرا کنید فقط پردازه‌های در حال اجرا در همان کانتینر را می‌بینید و به فهرست پردازه‌های در حال اجرا در ماشین میزبان دسترسی نخواهید داشت.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ docker run --rm -it --name pid-test hub.hamdocker.ir/library/alpine sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# ps -eaf&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;PID USER TIME COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;1&lt;/span&gt; root 0:00 sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;7&lt;/span&gt; root 0:00 ps -eaf
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در ‌واقع با بهره‌برداری از فضانام PID قابلیت محدود کردن امکان دسترسی به پردازه‌های در حال اجرا در میزبان برای کانتینرها با ایزوله کردن فهرست شناسه‌ی پردازه‌ها فراهم می‌شود. برای آزمایش فضانام PID مجدداً از unshare استفاده می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --pid sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# id&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# id&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sh: 2: Cannot fork
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# ls&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sh: 3: Cannot fork
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;# id&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sh: 4: Cannot fork
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;اگه به خروجی دستورات بالا دقت کنید به نظر مشکلی وجود دارد. به غیر از دستور اول، بقیه دستور‌ها با خطا مواجه شده‌اند. اگه به متن خطا دقت کنید قالب آن از چپ به راست به صورت نام دستور، شناسه‌ی پردازه و متن خطا می‌باشد. با اجرای‌ هر دستور، شناسه‌‌ی پردازه‌ها در حال افزایش است و این نشان دهنده‌ی اعمال ‌شدن فضانام PID است، اما اگر نتوان بیش از یک پردازه در این فضانام اجرا کرد، کاملاً بلااستفاده باقی می‌ماند. متن خطای دریافتی و همچنین توضیحات unshare نشان می‌دهند که:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ man unshare
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;-f, --fork
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Fork the specified program as a child process of unshare rather than running it directly. This is useful when creating a new PID namespace.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;پس با استفاده از fork&amp;ndash; پردازه‌ی جدید مستقیماً به صورت یک فرزند از unshare اجرا خواهد شد. حال مجدداً یک فضانام PID ایجاد می‌کنیم. با اجرای چند دستور مشاهده می‌کنیم خطای قبل رفع شده است:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --pid --fork /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="nv"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt; &lt;span class="nv"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0&lt;span class="o"&gt;(&lt;/span&gt;root&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# cat /etc/hostname
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Milad-PC
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس برای فهرست کردن پردازه‌های موجود در فضانام جدید از دستور ps استفاده می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# ps -eaf
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;UID PID PPID C STIME TTY TIME CMD
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 ? 00:00:09 /sbin/init splash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 ? 00:00:00 &lt;span class="o"&gt;[&lt;/span&gt;kthreadd&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;4&lt;/span&gt; &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 ? 00:00:00 &lt;span class="o"&gt;[&lt;/span&gt;kworker/0:0H&lt;span class="o"&gt;]&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;6210&lt;/span&gt; &lt;span class="m"&gt;9375&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:02 pts/2 00:00:00 sudo unshare --pid --fork /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;6211&lt;/span&gt; &lt;span class="m"&gt;6210&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:02 pts/2 00:00:00 unshare --pid --fork /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;6212&lt;/span&gt; &lt;span class="m"&gt;6211&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:02 pts/2 00:00:00 /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root &lt;span class="m"&gt;6421&lt;/span&gt; &lt;span class="m"&gt;6212&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 02:03 pts/2 00:00:00 ps -eaf
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;…
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;milad &lt;span class="m"&gt;7089&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 ? 00:00:06 /lib/systemd/systemd --user
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;milad &lt;span class="m"&gt;7090&lt;/span&gt; &lt;span class="m"&gt;7089&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 ? 00:00:00 &lt;span class="o"&gt;(&lt;/span&gt;sd-pam&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;milad &lt;span class="m"&gt;8536&lt;/span&gt; &lt;span class="m"&gt;8426&lt;/span&gt; &lt;span class="m"&gt;1&lt;/span&gt; فوریه18 tty2 01:24:19 /usr/lib/chromium-browser/chromium-browser --type&lt;span class="o"&gt;=&lt;/span&gt;renderer --field-trial-handle&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;1178073432432703370&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;milad &lt;span class="m"&gt;10327&lt;/span&gt; &lt;span class="m"&gt;7677&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; فوریه18 pts/1 00:00:11 /usr/bin/zsh
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;اگر در یک کانتینر ایجاد شده مثلاً با داکر دستور ps را وارد کنید فقط پردازه‌های موجود در همان کانتینر را مشاهده خواهید کرد. با توجه به خروجی دستور ps شاید این‌طور به نظر برسد که فضانام PID جدید به درستی پردازه‌ی جدید را ایزوله نکرده و پردازه‌ی جدید به فهرست پردازه‌های در حال اجرا در میزبان دسترسی دارد اما در‌ واقع این‌طور نیست. فهرست پردازه‌های میزبان به این علت در دسترس است که دستور ps اطلاعات را از روی فایل‌های موجود در مسیر proc/ می‌خواند و پردازش می‌کند. اگه از مسیر proc/ در میزبان ls بگیرید فهرستی از دایرکتوری‌ها را مشاهده خواهید کرد که متناظر با پردازه‌های در حال اجرا در سیستم‌عامل می‌باشد که در داخل آن‌ها اطلاعات کامل پردازه‌ها به صورت فهرستی از فایل‌ها وجود دارد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ls /proc
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="m"&gt;132&lt;/span&gt; &lt;span class="m"&gt;1483&lt;/span&gt; &lt;span class="m"&gt;1943&lt;/span&gt; &lt;span class="m"&gt;2052&lt;/span&gt; &lt;span class="m"&gt;239&lt;/span&gt; &lt;span class="m"&gt;2566&lt;/span&gt; &lt;span class="m"&gt;272&lt;/span&gt; &lt;span class="m"&gt;321&lt;/span&gt; &lt;span class="m"&gt;4510&lt;/span&gt; &lt;span class="m"&gt;513&lt;/span&gt; &lt;span class="m"&gt;540&lt;/span&gt; &lt;span class="m"&gt;6635&lt;/span&gt; &lt;span class="m"&gt;7433&lt;/span&gt; &lt;span class="m"&gt;7575&lt;/span&gt; &lt;span class="m"&gt;817&lt;/span&gt; &lt;span class="m"&gt;9136&lt;/span&gt; fs pagetypeinfo
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;…
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای اینکه در فضانام جدید دستور ps فقط اطلاعات پردازه‌های موجود در همین فضانام را برگردانند باید یک مسیر proc/ مجزا برای همین فضانام وجود داشته باشد که کرنل اطلاعات پردازه‌های موجود در آن را مدیریت کند که برای پیاده‌سازی آن می‌توان از chroot استفاده کرد.&lt;/p&gt;
+&lt;p&gt;در زمان ایجاد یک کانتینر به طور پیش‌فرض به جای دسترسی کامل به فایل‌سیستم میزبان، پردازه‌ها به بخش کوچکی از فایل سیستم دسترسی خواهند داشت، چون درست بعد از ایجاد کانتینر دایرکتوری root برای پردازه‌ی اصلی داخل کانتینر تغییر می‌کند. در سیستم‌عامل لینوکس این عملیات با استفاده از chroot انجام می‌شود.&lt;/p&gt;
+&lt;p&gt;در توضیحات chroot اشاره شده است که chroot یک دستور یا shell را در دایرکتوری جدید اجرا می‌کند و همچنین اگر دستوری وارد نشود به صورت پیش‌فرض از مقدار متغیر SHELL$ استفاده خواهد کرد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ man chroot
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;NAME
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;chroot - run &lt;span class="nb"&gt;command&lt;/span&gt; or interactive shell with special root directory
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;…
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;If no &lt;span class="nb"&gt;command&lt;/span&gt; is given, run &lt;span class="s1"&gt;&amp;#39;&amp;amp;quot$SHELL&amp;amp;quot -i&amp;#39;&lt;/span&gt; &lt;span class="o"&gt;(&lt;/span&gt;default: &lt;span class="s1"&gt;&amp;#39;/bin/sh -i&amp;#39;&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;.
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای درک بهتر این فرآیند دستورات زیر را اجرا می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ mkdir /tmp/new_root_dir
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo chroot /tmp/new_root_dir
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;chroot: failed to run command ‘/usr/bin/zsh’: No such file or directory
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo chroot /tmp/new_root_dir id
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;chroot: failed to run command ‘id’: No such file or directory
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo chroot /tmp/new_root_dir ls
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;chroot: failed to run command ‘ls’: No such file or directory
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با توجه به متن‌ خطا به نظر می‌رسد که بعد از تغییر دایرکتوری root دسترسی به برنامه‌های موجود در دایرکتوری bin/ امکان‌پذیر نیست. بنابراین حتی امکان استفاده از دستوراتی مثل ls و id فراهم نیست. بنابراین تمامی فایل‌‌های مورد نیاز، باید به دایرکتوری جدید انتقال داده شود؛ کاملاً مشابه زمانی که یک کانتینر واقعی ایجاد می‌شود. یک کانتینر از روی یک image ایجاد می‌شود که آن image حاوی تمامی فایل‌هایی است که پردازه‌های موجود در آن کانتینر به آن نیاز دارند. در‌ واقع آن image دقیقاً حاوی فایل‌سیستمی است که پردازه‌ها آن را می‌بینند.&lt;/p&gt;
+&lt;p&gt;بنابراین اگر ما فایل‌سیستم یک سیستم‌عامل کوچک مثل Alpine Linux را داشته باشیم‌ می‌توانیم به آن chroot کنیم و آن را در فضانام جدید اجرا کنیم. برای انجام این کار دستورات زیر را اجرا می‌کنیم که ابتدا یک دایرکتوری جدید ایجاد می‌شود، سپس آخرین نسخه‌ی فعلی فایل‌سیستم را دانلود و استخراج می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ mkdir alpine
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ &lt;span class="nb"&gt;cd&lt;/span&gt; alpine
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ curl -o alpine.tar.gz http://dl-cdn.alpinelinux.org/alpine/v3.13/releases/x86_64/alpine-minirootfs-3.13.0-x86_64.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;% Total % Received % Xferd Average Speed Time Time Time Current
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;Dload Upload Total Spent Left Speed
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;100&lt;/span&gt; 2664k &lt;span class="m"&gt;100&lt;/span&gt; 2664k &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; &lt;span class="m"&gt;15768&lt;/span&gt; &lt;span class="m"&gt;0&lt;/span&gt; 0:02:53 0:02:53 --:--:-- &lt;span class="m"&gt;18207&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ tar -xzf alpine.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ls
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;alpine.tar.gz bin dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ rm -rf alpine.tar.gz
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;سپس با chroot در این دایرکتوری می‌توانیم دستورات را در مسیر جدید اجرا کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ &lt;span class="nb"&gt;cd&lt;/span&gt; ..
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo chroot alpine ls
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bin dev dst etc home lib media mnt opt proc root run sbin src srv sys tmp usr var ...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با اتمام اجرای پردازه (یا دستور) فرزند، مجدداً کنترل به پردازه‌ی پدر برمی‌گردد. برای اینکه بتوانیم دستورات بیشتری در دایرکتوری جدید اجرا کنیم می‌توانیم یک شل را به عنوان پردازه‌ی فرزند اجرا کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-gdscript3" data-lang="gdscript3"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;$&lt;/span&gt; &lt;span class="n"&gt;sudo&lt;/span&gt; &lt;span class="n"&gt;chroot&lt;/span&gt; &lt;span class="n"&gt;alpine&lt;/span&gt; &lt;span class="n"&gt;sh&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="c1"&gt;# id&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;uid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;gid&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt; &lt;span class="n"&gt;groups&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;root&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="c1"&gt;# ls&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="n"&gt;bin&lt;/span&gt; &lt;span class="n"&gt;dev&lt;/span&gt; &lt;span class="n"&gt;dst&lt;/span&gt; &lt;span class="n"&gt;etc&lt;/span&gt; &lt;span class="n"&gt;home&lt;/span&gt; &lt;span class="n"&gt;lib&lt;/span&gt; &lt;span class="n"&gt;media&lt;/span&gt; &lt;span class="n"&gt;mnt&lt;/span&gt; &lt;span class="n"&gt;opt&lt;/span&gt; &lt;span class="n"&gt;proc&lt;/span&gt; &lt;span class="n"&gt;root&lt;/span&gt; &lt;span class="n"&gt;run&lt;/span&gt; &lt;span class="n"&gt;sbin&lt;/span&gt; &lt;span class="n"&gt;src&lt;/span&gt; &lt;span class="n"&gt;srv&lt;/span&gt; &lt;span class="n"&gt;sys&lt;/span&gt; &lt;span class="n"&gt;tmp&lt;/span&gt; &lt;span class="n"&gt;usr&lt;/span&gt; &lt;span class="k"&gt;var&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;/&lt;/span&gt; &lt;span class="c1"&gt;# exit&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;حالا با بهره‌برداری از قابلیت chroot و فضانام‌ها می‌توانیم یک فضانام PID ایجاد کرده و در زمان فراخوانی unshare دستور chroot را اجرا کنیم و سپس در داخل فضانام دایرکتوری proc/ فایل‌سیستم (image) را mount کنیم. با انجام این گام‌ها یک قدم در ایزوله کردن پردازه‌های داخل کانتینر برداشته می‌شود و جزئیات پردازه‌های میزبان از دید پردازه‌های در حال اجرا در فضانام مخفی خواهد بود. برای آزمایش این موضوع دستورات زیر را اجرا می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --pid --fork chroot alpine sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mount -t proc proc proc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# ps -eaf&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;PID USER TIME COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;1&lt;/span&gt; root 0:00 sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;3&lt;/span&gt; root 0:00 ps -eaf
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h2 id="فضانام-mount"&gt;فضانام Mount
+&lt;/h2&gt;&lt;p&gt;برای اینکه پردازه‌های داخل یک کانتینر به فایل سیستم میزبان دسترسی نداشته باشد، باید بین آن‌ها مرزی ایجاد شود. با استفاده از فضانام mount می‌توان این قابلیت را برای پردازه‌ها فراهم کرد.&lt;/p&gt;
+&lt;p&gt;برای مثال در زیر ما در یک فضانام mount جدید یک bind mount ایجاد می‌کنیم. Bind mounts این قابلیت را فراهم می‌کند که بخشی از یک فایل سیستم که قبلاً mount شده را در یک دایرکتوری دیگه مجدداً mount کنید. با بهره‌برداری از این قابلیت می‌شود عملیات مختلفی مثل اشتراک گذاری فقط خواندنی، chroot jail یا کانتینری کردن را پیاده‌سازی کرد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-fallback" data-lang="fallback"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --mount /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# mkdir src
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# echo &amp;amp;quotsample&amp;amp;quot &amp;gt; src/test.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# ls src
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;test.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# mkdir dst
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# ls dst
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# mount --bind src dst
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# ls dst
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;test.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# cat dst/test.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sample
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همان‌طور که می‌بینیم بعد از اعمال bind محتوای دایرکتوری src در dst نیز در دسترس است. با استفاده از findmnt می‌توانیم جزئیات بیشتری را ببینیم که این mount در این فضانام ایجاد شده است و از دید میزبان مخفی می‌باشد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# findmnt dst
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;TARGET SOURCE FSTYPE OPTIONS
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/home/milad/dst /dev/sda5&lt;span class="o"&gt;[&lt;/span&gt;/milad/src&lt;span class="o"&gt;]&lt;/span&gt; ext4 rw,relatime,data&lt;span class="o"&gt;=&lt;/span&gt;ordered
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای مثال در یک ترمینال دیگر در میزبان و خارج از این فضانام همین دستور را اجرا می‌کنیم.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ findmnt dst
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;حالا اگر همین دستور findmnt را در فضانام ساخته شده مجدداً بدون پارامتر اجرا کنیم فهرست کاملی از mountهای میزبان را مشاهده خواهیم کرد. همان‌طور که در مورد فضانام PID اشاره کردیم، انتظار داریم این موارد از دید یک کانتینر مخفی شده باشد. مشابه شناسه‌ی پردازه‌ها کرنل از مسیر proc/ID/mounts/ اطلاعات مربوط به mountهای هر پردازه را می‌خواند. بنابراین وقتی که یک پردازه با یک فضانام اختصاصی ایجاد کنیم ولی همچنان از مسیر proc/ میزبان استفاده کند، پردازه می‌تواند به اطلاعات میزبان دسترسی داشته باشد.&lt;/p&gt;
+&lt;p&gt;برای ایزوله کردن یک پردازه‌ نیاز است که ساخت یک فضانام جدید همراه با ایجاد یک فایل‌سیستم root و یک proc mount انجام شود.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;span class="lnt"&gt;16
+&lt;/span&gt;&lt;span class="lnt"&gt;17
+&lt;/span&gt;&lt;span class="lnt"&gt;18
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare --mount chroot alpine sh
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# ls&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;bin dev etc home lib media mnt opt proc root run sbin srv sys tmp usr var
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mount -t proc proc proc&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mount&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;proc on /proc &lt;span class="nb"&gt;type&lt;/span&gt; proc &lt;span class="o"&gt;(&lt;/span&gt;rw,relatime&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mkdir src&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# echo &amp;amp;quotsample&amp;amp;quot &amp;gt; src/test.txt&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mkdir dst&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mount --bind src dst&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# ls dst&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;test.txt
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# cat dst/test.txt&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;sample
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;# mount&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;proc on /proc &lt;span class="nb"&gt;type&lt;/span&gt; proc &lt;span class="o"&gt;(&lt;/span&gt;rw,relatime&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/dev/sda1 on /dst &lt;span class="nb"&gt;type&lt;/span&gt; ext4 &lt;span class="o"&gt;(&lt;/span&gt;rw,relatime,errors&lt;span class="o"&gt;=&lt;/span&gt;remount-ro,data&lt;span class="o"&gt;=&lt;/span&gt;ordered&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;/ &lt;span class="c1"&gt;#&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;به طور مشابه وقتی شما یک دایرکتوری در سیستم میزبان را در یک کانتینر mount می‌کنید (مثلاً در داکر: docker run -v path_in_host:path_in_container) ابتدا فایل‌سیستم root کانتینر در محل مناسب قرار می‌گیرد. سپس دایرکتوری مقصد در کانتینر ایجاد شده و در نهایت دایرکتوری مبدأ در مقصد bind mount می‌شود.&lt;/p&gt;
+&lt;h2 id="فضانام-شبکه-network"&gt;فضانام شبکه (Network)
+&lt;/h2&gt;&lt;p&gt;یکی دیگر از سطوح ایزوله کردن، مربوط به فضای شبکه می‌باشد. فضانام شبکه به پردازه‌ها اجازه می‌دهد که دید اختصاصی نسبت به کارت شبکه و جدول مسیریابی داشته باشند.&lt;/p&gt;
+&lt;p&gt;با استفاده از دستور زیر می‌توان یک فضانام شبکه ایجاد کرد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo unshare –net /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;با استفاده از دستور lsns و تعیین نوع net می‌توانیم جزئیات فضانام ایجاد شده را ببینیم. شناسه‌ی پردازه را به خاطر بسپارید.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# lsns -t net
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;NS TYPE NPROCS PID USER COMMAND
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;4026532516&lt;/span&gt; net &lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="m"&gt;5268&lt;/span&gt; root /bin/bash
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;...
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;به صورت پیش‌فرض وقتی که یک پردازه را در فضانام شبکه‌ی مختص به خودش قرار می‌دهیم، فقط یک کارت شبکه loopback دارد.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:~# ip a
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK&amp;gt; mtu &lt;span class="m"&gt;65536&lt;/span&gt; qdisc noop state DOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;برای اینکه پردازه‌ی در حال اجرا در کانتینر بتواند انتقال داده داشته باشد باید یک کارت شبکه‌ی مجازی ایجاد کنیم که مثل دو سر یک کابل شبکه عمل می‌کند. در‌ واقع فضانام شبکه‌ی اختصاصی ایجاد شده برای پردازه را به فضانام شبکه میزبان (پیش‌فرض) متصل می‌کند. برای این کار در یک ترمینال دیگر دستور زیر را وارد می‌کنیم:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ip link add myeth1 netns &lt;span class="m"&gt;5268&lt;/span&gt; &lt;span class="nb"&gt;type&lt;/span&gt; veth peer name myeth2 netns &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;اگر بخواهیم دستور بالا را به زبان ساده بیان کنیم، ip link add اعلام می‌کند که می‌خواهیم یک اتصال ایجاد کنیم که در فضانام مربوط به پردازه‌ی ۵۲۶۸ یک کارت شبکه‌ی مجازی به اسم myeth1 ایجاد کند و آن را به فضانام پردازه‌ی ۱ وصل کند و نام کارت شبکه‌ی مجازی را myeth2 تنظیم کند.&lt;/p&gt;
+&lt;p&gt;حالا اگر در یک ترمینال در میزبان و همچنین در داخل فضانام جدید فهرست کارت شبکه‌ها را بررسی کنیم این دو کارت شبکه را خواهیم دید.&lt;/p&gt;
+&lt;p&gt;در داخل فضانام شبکه‌ی جدید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# ip a
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK&amp;gt; mtu &lt;span class="m"&gt;65536&lt;/span&gt; qdisc noop state DOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2: myveth1@if18: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu &lt;span class="m"&gt;1500&lt;/span&gt; qdisc noop state DOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt; link/ether 5e:f7:93:bf:19:80 brd ff:ff:ff:ff:ff:ff link-netnsid &lt;span class="m"&gt;0&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در داخل میزبان:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ip a
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;1: lo: &amp;lt;LOOPBACK,UP,LOWER_UP&amp;gt; mtu &lt;span class="m"&gt;65536&lt;/span&gt; qdisc noqueue state UNKNOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt; link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00 inet 127.0.0.1/8 scope host lo valid_lft forever preferred_lft forever inet6 ::1/128 scope host valid_lft forever preferred_lft forever
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;…
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;18: myveth2@if2: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu &lt;span class="m"&gt;1500&lt;/span&gt; qdisc noop state DOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt; link/ether ea:4d:95:01:8c:db brd ff:ff:ff:ff:ff:ff link-netnsid &lt;span class="m"&gt;1&lt;/span&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در حالت فعلی هر دو کارت شبکه‌ی جدید در وضعیت Down هستند و برای اینکه امکان انتقال داده فراهم شود باید وضعیت هر دو کارت به Up تغییر کند و به آن‌ها آدرس IP تخصیص داده شود.&lt;/p&gt;
+&lt;p&gt;در ترمینال میزبان:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo ip link &lt;span class="nb"&gt;set&lt;/span&gt; myveth2 up
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo ip addr add 192.168.30.100/24 dev myveth2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ip a s myveth2
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;18: myveth2@if2: &amp;lt;NO-CARRIER,BROADCAST,MULTICAST,UP&amp;gt; mtu &lt;span class="m"&gt;1500&lt;/span&gt; qdisc noqueue state LOWERLAYERDOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt; link/ether ea:4d:95:01:8c:db brd ff:ff:ff:ff:ff:ff link-netnsid &lt;span class="m"&gt;1&lt;/span&gt; inet 192.168.30.100/24 scope global myveth2 valid_lft forever preferred_lft forever
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;در فضانام جدید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo ip link &lt;span class="nb"&gt;set&lt;/span&gt; myveth1 up
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ sudo ip addr add 192.168.30.101/24 dev myveth1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ip a s myveth1
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;2: myveth1@if18: &amp;lt;BROADCAST,MULTICAST&amp;gt; mtu &lt;span class="m"&gt;1500&lt;/span&gt; qdisc noop state DOWN group default qlen &lt;span class="m"&gt;1000&lt;/span&gt; link/ether 5e:f7:93:bf:19:80 brd ff:ff:ff:ff:ff:ff link-netnsid &lt;span class="m"&gt;0&lt;/span&gt; inet 192.168.30.101/24 scope global myveth1valid_lft forever preferred_lft forever
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همان‌طور که اشاره کردیم با ایجاد یک فضانام شبکه، جدول مسیر‌یابی و کارت شبکه‌ها ایزوله خواهد شد و پردازه‌ی موجود در کانتینر به اطلاعات میزبان دسترسی نخواهد داشت.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# ip route
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;192.168.30.0/24 dev myveth1 proto kernel scope link src 192.168.30.101
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;حالا هم در ترمینال ماشین میزبان و هم در فضانام جدید می‌توانیم اتصال را تست کنیم. در ترمینال ماشین میزبان این دستور را اجرا کنید:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;$ ping 192.168.30.101
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;PING 192.168.30.101 &lt;span class="o"&gt;(&lt;/span&gt;192.168.30.101&lt;span class="o"&gt;)&lt;/span&gt; 56&lt;span class="o"&gt;(&lt;/span&gt;84&lt;span class="o"&gt;)&lt;/span&gt; bytes of data.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;64&lt;/span&gt; bytes from 192.168.30.101: &lt;span class="nv"&gt;icmp_seq&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="nv"&gt;ttl&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;64&lt;/span&gt; &lt;span class="nv"&gt;time&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0.043 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;64&lt;/span&gt; bytes from 192.168.30.101: &lt;span class="nv"&gt;icmp_seq&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="nv"&gt;ttl&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;64&lt;/span&gt; &lt;span class="nv"&gt;time&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0.079 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;^C
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;--- 192.168.30.101 ping statistics ---
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;2&lt;/span&gt; packets transmitted, &lt;span class="m"&gt;2&lt;/span&gt; received, 0% packet loss, &lt;span class="nb"&gt;time&lt;/span&gt; 1020ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;rtt min/avg/max/mdev &lt;span class="o"&gt;=&lt;/span&gt; 0.043/0.061/0.079/0.018 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;همین‌طور در فضانام:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-bash" data-lang="bash"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;root@Milad-PC:/tmp# ping 192.168.30.100
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;PING 192.168.30.100 &lt;span class="o"&gt;(&lt;/span&gt;192.168.30.100&lt;span class="o"&gt;)&lt;/span&gt; 56&lt;span class="o"&gt;(&lt;/span&gt;84&lt;span class="o"&gt;)&lt;/span&gt; bytes of data.
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;64&lt;/span&gt; bytes from 192.168.30.100: &lt;span class="nv"&gt;icmp_seq&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;1&lt;/span&gt; &lt;span class="nv"&gt;ttl&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;64&lt;/span&gt; &lt;span class="nv"&gt;time&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0.078 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;64&lt;/span&gt; bytes from 192.168.30.100: &lt;span class="nv"&gt;icmp_seq&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;2&lt;/span&gt; &lt;span class="nv"&gt;ttl&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="m"&gt;64&lt;/span&gt; &lt;span class="nv"&gt;time&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;0.100 ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;^C
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;--- 192.168.30.100 ping statistics ---
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="m"&gt;2&lt;/span&gt; packets transmitted, &lt;span class="m"&gt;2&lt;/span&gt; received, 0% packet loss, &lt;span class="nb"&gt;time&lt;/span&gt; 1015ms
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;rtt min/avg/max/mdev &lt;span class="o"&gt;=&lt;/span&gt; 0.078/0.089/0.100/0.011 ms
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;مطابق خروجی بالا می‌بینیم که اتصال بین دو طرف برقرار شده است.&lt;/p&gt;
+&lt;p&gt;در قسمت اول با فضانام‌های uts، pid، mount و network آشنا شدیم. در قسمت &lt;a class="link" href="https://fa.miladbr.uk/p/%d9%81%d8%b6%d8%a7%d9%86%d8%a7%d9%85%d9%87%d8%a7-%d8%af%d8%b1-%d9%84%db%8c%d9%86%d9%88%da%a9%d8%b3-%db%b1/" &gt;دوم&lt;/a&gt; این نوشتار فضانام‌های user، ipc، cgroup و time را مورد بررسی قرار داده‌ایم.&lt;/p&gt;
+&lt;/div&gt;</description></item></channel></rss>
